@@ -1,0 +1,25 @@
+name: hrm
+
+# Day 1: database only. The api (ASP.NET Core) and web (Nginx + Angular) services are added on Day 10.
+services:
+  db:
+    image: postgres:17
+    container_name: hrm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-hrm}
+      POSTGRES_USER: ${DB_USER:-hrm}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env (copy .env.example to .env)}
+    ports:
+      # Development only, bound to localhost: lets `dotnet run` and DB tools on this machine connect.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

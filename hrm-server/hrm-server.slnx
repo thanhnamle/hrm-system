@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/HRM.Domain/HRM.Domain.csproj" />
+    <Project Path="src/HRM.Application/HRM.Application.csproj" />
+    <Project Path="src/HRM.Infrastructure/HRM.Infrastructure.csproj" />
+    <Project Path="src/HRM.API/HRM.API.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="tests/Directory.Build.props" />
+    <Project Path="tests/HRM.Domain.Tests/HRM.Domain.Tests.csproj" />
+    <Project Path="tests/HRM.Application.Tests/HRM.Application.Tests.csproj" />
+    <Project Path="tests/HRM.API.IntegrationTests/HRM.API.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

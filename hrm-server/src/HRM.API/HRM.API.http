@@ -1,0 +1,6 @@
+@HRM_API_HostAddress = http://localhost:5183
+
+GET {{HRM_API_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###

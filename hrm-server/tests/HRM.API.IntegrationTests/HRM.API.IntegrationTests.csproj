@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/HRM.API/HRM.API.csproj" />
+  </ItemGroup>
+</Project>
