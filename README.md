@@ -27,6 +27,12 @@ Requirements: .NET 10 SDK, Docker Desktop.
    dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=hrm;Username=hrm;Password=<DB_PASSWORD>" --project hrm-server/src/HRM.API
    ```
 
+   Also set the password used for every seeded demo account (8+ chars, with upper, lower, digit and symbol):
+
+   ```bash
+   dotnet user-secrets set "Seed:DefaultPassword" "<password>" --project hrm-server/src/HRM.API
+   ```
+
 2. **Start PostgreSQL:**
 
    ```bash
@@ -47,6 +53,29 @@ Requirements: .NET 10 SDK, Docker Desktop.
 | http://localhost:5183/health | `Healthy` when the API can reach PostgreSQL (503 otherwise) |
 | http://localhost:5183/scalar | Interactive API docs (Development only) |
 | http://localhost:5183/openapi/v1.json | OpenAPI document (Development only) |
+
+In Development the API applies pending EF Core migrations and seeds demo data on startup (skipped if data already exists).
+
+### Demo accounts (Development seed)
+
+All use the `Seed:DefaultPassword` from your user-secrets.
+
+| Role | Accounts |
+|---|---|
+| Admin | `admin@hrm.local` (no employee record) |
+| HR | `linh.tran@hrm.local` (manages HR), `mai.pham@hrm.local` |
+| Manager | `minh.nguyen@hrm.local` (Engineering), `lan.bui@hrm.local` (Sales) |
+| Employee | `huy.le`, `thao.vo`, `khoa.dang`, `tuan.phan` (Engineering) · `quang.do`, `ngoc.hoang` (Sales) — all `@hrm.local` |
+
+### Database migrations
+
+`dotnet-ef` is a local tool (`hrm-server/dotnet-tools.json`). From `hrm-server/`:
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/HRM.Infrastructure --startup-project src/HRM.API --output-dir Persistence/Migrations
+dotnet ef database update --project src/HRM.Infrastructure --startup-project src/HRM.API
+```
 
 ## Documentation
 

@@ -7,9 +7,12 @@
   <ItemGroup Label="Application">
     <!-- Pinned to 12.x: last Apache-2.0 release. v13+ is commercially licensed. Do not upgrade. -->
     <PackageVersion Include="MediatR" Version="12.5.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup Label="Infrastructure">
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.14" />
@@ -24,6 +27,7 @@
   <ItemGroup Label="Tests">
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>

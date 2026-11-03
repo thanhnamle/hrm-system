@@ -1,6 +1,7 @@
 using HRM.API.ExceptionHandling;
 using HRM.Application;
 using HRM.Infrastructure;
+using HRM.Infrastructure.Persistence.Seed;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -33,6 +34,15 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
     var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
+    {
+        // Apply pending migrations and insert demo data. Production runs migrations as a separate deploy step.
+        await using var scope = app.Services.CreateAsyncScope();
+        var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
+        await initializer.MigrateAsync();
+        await initializer.SeedAsync();
+    }
 
     app.UseExceptionHandler();
     app.UseStatusCodePages(); // empty 4xx responses (e.g. unknown route) also get a ProblemDetails body

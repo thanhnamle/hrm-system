@@ -2,6 +2,7 @@ using HRM.Application.Common.Interfaces;
 using HRM.Infrastructure.Identity;
 using HRM.Infrastructure.Persistence;
 using HRM.Infrastructure.Persistence.Interceptors;
+using HRM.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,19 @@ public static class DependencyInjection
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Identity stores + UserManager/RoleManager. Sign-in and JWT issuing are added on Day 3.
+        services.AddIdentityCore<AppUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.Password.RequiredLength = 8;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            })
+            .AddRoles<AppRole>()
+            .AddEntityFrameworkStores<AppDbContext>();
+
+        services.AddScoped<DbInitializer>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<AppDbContext>("postgresql");

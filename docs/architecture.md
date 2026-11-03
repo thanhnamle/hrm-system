@@ -56,7 +56,9 @@ Diagram: [diagrams/clean-architecture.drawio](diagrams/clean-architecture.drawio
 Diagram: [diagrams/erd.drawio](diagrams/erd.drawio)
 
 **Business rules (in Domain):**
-- Leave days ≤ `LeaveBalance − pending days`; balance is deducted on **approve**.
+- Leave is counted in **working days (Mon–Fri)**; public holidays are not excluded yet. New hires get **12 days** of annual leave.
+- Annual leave days ≤ `LeaveBalance − pending annual days`; balance is deducted on **approve**. Sick / Unpaid leave do not use the balance.
+- Leave cannot start in the past or overlap a pending/approved request.
 - Only a `Pending` request can be approved / rejected / cancelled.
 - **Nobody can approve their own leave request.**
 - One check-in per employee per day; check-out must be after check-in.
