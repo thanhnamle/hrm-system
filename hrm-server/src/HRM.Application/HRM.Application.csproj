@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <!-- DbSet<T> / LINQ async operators for IApplicationDbContext -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>

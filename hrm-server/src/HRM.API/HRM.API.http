@@ -1,6 +1,36 @@
 @HRM_API_HostAddress = http://localhost:5183
+@email = admin@hrm.local
+@password = <Seed:DefaultPassword>
 
 GET {{HRM_API_HostAddress}}/openapi/v1.json
 Accept: application/json
+
+###
+
+# @name login
+POST {{HRM_API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+###
+
+GET {{HRM_API_HostAddress}}/api/auth/me
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# Admin only (Users.Manage); any other role gets 403
+GET {{HRM_API_HostAddress}}/api/users
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+POST {{HRM_API_HostAddress}}/api/auth/refresh
+
+###
+
+POST {{HRM_API_HostAddress}}/api/auth/logout
+Authorization: Bearer {{login.response.body.$.accessToken}}
 
 ###

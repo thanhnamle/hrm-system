@@ -14,6 +14,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
+    // Auth only; not exposed to the Application layer through IApplicationDbContext.
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Identity's model first, so our configurations (table renames etc.) can override it.

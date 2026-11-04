@@ -1,4 +1,6 @@
 using HRM.API.ExceptionHandling;
+using HRM.API.OpenApi;
+using HRM.API.Security;
 using HRM.Application;
 using HRM.Infrastructure;
 using HRM.Infrastructure.Persistence.Seed;
@@ -22,8 +24,11 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
+    builder.Services.AddPermissionPolicies();
+    builder.Services.AddLoginRateLimiting();
+
     builder.Services.AddControllers();
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
     builder.Services.AddProblemDetails(options =>
         options.CustomizeProblemDetails = context =>
@@ -44,21 +49,24 @@ try
         await initializer.SeedAsync();
     }
 
+    // Outermost, so it logs the final status code (e.g. 401) rather than the exception the handler below turns into it.
+    app.UseSerilogRequestLogging();
     app.UseExceptionHandler();
     app.UseStatusCodePages(); // empty 4xx responses (e.g. unknown route) also get a ProblemDetails body
-    app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();              // /openapi/v1.json
-        app.MapScalarApiReference();   // /scalar
+        app.MapOpenApi().AllowAnonymous();              // /openapi/v1.json
+        app.MapScalarApiReference().AllowAnonymous();   // /scalar
     }
 
     // No UseHttpsRedirection: HTTPS is terminated by Nginx in front of the API.
+    app.UseRateLimiter();
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
-    app.MapHealthChecks("/health");
+    app.MapHealthChecks("/health").AllowAnonymous();
 
     app.Run();
 }

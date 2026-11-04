@@ -33,6 +33,12 @@ Requirements: .NET 10 SDK, Docker Desktop.
    dotnet user-secrets set "Seed:DefaultPassword" "<password>" --project hrm-server/src/HRM.API
    ```
 
+   And a random JWT signing key (at least 32 bytes; the API refuses to start without it):
+
+   ```bash
+   dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)" --project hrm-server/src/HRM.API
+   ```
+
 2. **Start PostgreSQL:**
 
    ```bash
@@ -55,6 +61,12 @@ Requirements: .NET 10 SDK, Docker Desktop.
 | http://localhost:5183/openapi/v1.json | OpenAPI document (Development only) |
 
 In Development the API applies pending EF Core migrations and seeds demo data on startup (skipped if data already exists).
+
+### Signing in
+
+`POST /api/auth/login` with `{ "email": "...", "password": "..." }` returns a 15-minute `accessToken` plus the user's role and `permissions`, and sets the refresh token as an HttpOnly cookie (`hrm_refresh`, path `/api/auth`). In Scalar, paste the access token into the Bearer auth box. `POST /api/auth/refresh` renews both tokens, `POST /api/auth/logout` revokes the refresh token, `GET /api/auth/me` returns the current user. Every other endpoint requires a token; see [docs/rbac.md](docs/rbac.md) for who may call what.
+
+Login is limited to 5 attempts per minute per IP, and 5 wrong passwords lock an account for 15 minutes.
 
 ### Demo accounts (Development seed)
 

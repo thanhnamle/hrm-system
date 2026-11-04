@@ -104,11 +104,12 @@ All versions are pinned in `hrm-server/Directory.Packages.props`.
 | Health | `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` (`AddDbContextCheck`) | Day 1 |
 | Logging | `Serilog.AspNetCore` | Day 1 |
 | API docs | `Microsoft.AspNetCore.OpenApi` + `Scalar.AspNetCore` | Day 1 |
-| Tests | `xUnit` (+ later `Shouldly`, `NSubstitute`, `Testcontainers.PostgreSql`) | Day 1 / 4–5 |
+| Tests | `xUnit` + `Shouldly` (+ `Testcontainers.PostgreSql` on Day 5) | Day 1 / 5 |
 | Migrations | `Microsoft.EntityFrameworkCore.Design` + `dotnet-ef` tool | Day 2 |
-| Identity | `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | Day 3 |
+| Identity | `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | Day 2 |
 | JWT | `Microsoft.AspNetCore.Authentication.JwtBearer` | Day 3 |
-| Validation | `FluentValidation.DependencyInjectionExtensions` | Day 4 |
+| Validation | `FluentValidation.DependencyInjectionExtensions` (moved up from Day 4: login is the first validated command) | Day 3 |
+| Test doubles | `NSubstitute` | Day 3 |
 
 DTO mapping is done manually with `.Select(...)` projections (no AutoMapper).
 

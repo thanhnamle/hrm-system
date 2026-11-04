@@ -10,7 +10,7 @@ Sequence diagrams: [diagrams/sequence-login.drawio](diagrams/sequence-login.draw
 | Access token | JWT, **15 min**, HS256; claims: `sub`, `email`, `role`, `employee_id` | Short life limits damage if stolen |
 | Access token storage (browser) | **In memory** (Angular signal), never `localStorage` | Not readable by XSS from storage |
 | Refresh token | Random 64 bytes, **7 days**, `HttpOnly; Secure; SameSite=Strict` cookie, path `/api/auth` | JavaScript cannot read it |
-| Refresh token in DB | Store **SHA-256 hash** only | DB leak ≠ valid tokens |
+| Refresh token in DB | Store **SHA-256 hash** only (`refresh_tokens`, `xmin` concurrency token so two parallel refreshes can't both rotate) | DB leak ≠ valid tokens |
 | Rotation | Every refresh issues a new token and revokes the old one | |
 | Reuse detection | Revoked token used again → revoke **all** tokens of that user | Detects token theft |
 | Brute force | Identity lockout (5 failures → 15 min) + `RateLimiter` on `/auth/login` (5/min/IP) | |

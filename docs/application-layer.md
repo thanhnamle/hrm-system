@@ -19,7 +19,7 @@ Diagram: [diagrams/clean-architecture.drawio](diagrams/clean-architecture.drawio
 HRM.Application/
 ├── Common/
 │   ├── Behaviors/      LoggingBehavior.cs, ValidationBehavior.cs
-│   ├── Interfaces/     IApplicationDbContext, ICurrentUser, IIdentityService, IJwtTokenService
+│   ├── Interfaces/     IApplicationDbContext, ICurrentUser, IIdentityService, IJwtTokenService, IRefreshTokenService
 │   ├── Exceptions/     NotFound, Forbidden, Unauthorized, Validation
 │   ├── Models/         PagedResult<T>, PageRequest
 │   └── Security/       Roles, Permissions, RolePermissions, DataScope
