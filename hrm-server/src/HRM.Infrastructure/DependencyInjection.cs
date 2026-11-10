@@ -1,5 +1,6 @@
 using HRM.Application.Common.Interfaces;
 using HRM.Application.Common.Security;
+using HRM.Infrastructure.Common;
 using HRM.Infrastructure.Identity;
 using HRM.Infrastructure.Persistence;
 using HRM.Infrastructure.Persistence.Interceptors;
@@ -24,6 +25,8 @@ public static class DependencyInjection
                 "dotnet user-secrets set \"ConnectionStrings:Default\" \"Host=localhost;Port=5432;Database=hrm;Username=hrm;Password=...\" --project src/HRM.API");
 
         services.AddSingleton(TimeProvider.System);
+        services.Configure<CompanyOptions>(configuration.GetSection(CompanyOptions.SectionName));
+        services.AddSingleton<IClock, CompanyClock>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
 

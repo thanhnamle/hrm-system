@@ -47,6 +47,20 @@ public class EmployeeTests
     }
 
     [Fact]
+    public void Terminate_cancels_pending_leave_but_keeps_approved_history()
+    {
+        var employee = NewEmployee();
+        var approved = employee.RequestLeave(LeaveType.Annual, Monday, Monday, "Done", Monday);
+        approved.Approve(Guid.CreateVersion7(), Now);
+        var pending = employee.RequestLeave(LeaveType.Annual, Friday, Friday, "Later", Monday);
+
+        employee.Terminate();
+
+        pending.Status.ShouldBe(LeaveStatus.Cancelled);
+        approved.Status.ShouldBe(LeaveStatus.Approved);
+    }
+
+    [Fact]
     public void Terminated_employee_cannot_be_updated()
     {
         var employee = NewEmployee();

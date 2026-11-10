@@ -14,4 +14,8 @@ public class ValidationException(IReadOnlyDictionary<string, string[]> errors)
             .ToDictionary(g => g.Key, g => g.Distinct().ToArray()))
     {
     }
+
+    /// <summary>For checks a validator can't do, e.g. "this department does not exist".</summary>
+    public static ValidationException For(string field, string message) =>
+        new(new Dictionary<string, string[]> { [field] = [message] });
 }

@@ -75,6 +75,13 @@ public class LeaveRequest : AuditableEntity
         Status = LeaveStatus.Cancelled;
     }
 
+    /// <summary>Cancelled by the system, e.g. when the employee is terminated.</summary>
+    internal void Withdraw()
+    {
+        EnsurePending();
+        Status = LeaveStatus.Cancelled;
+    }
+
     private void EnsureReviewable(Guid reviewerId)
     {
         if (reviewerId == EmployeeId)

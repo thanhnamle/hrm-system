@@ -94,12 +94,18 @@ public class Employee : AuditableEntity
         DepartmentId = departmentId;
     }
 
-    /// <summary>Soft delete: the row stays for history, the employee can no longer log in or act.</summary>
+    /// <summary>
+    /// Soft delete: the row stays for history, the employee can no longer log in or act.
+    /// Pending leave requests are cancelled, so load them (<see cref="LeaveRequests"/>) first.
+    /// </summary>
     public void Terminate()
     {
         if (Status == EmployeeStatus.Terminated)
             throw new DomainException("Employee is already terminated.");
         Status = EmployeeStatus.Terminated;
+
+        foreach (var request in _leaveRequests.Where(r => r.Status == LeaveStatus.Pending))
+            request.Withdraw();
     }
 
     public LeaveRequest RequestLeave(LeaveType type, DateOnly startDate, DateOnly endDate, string reason, DateOnly today)

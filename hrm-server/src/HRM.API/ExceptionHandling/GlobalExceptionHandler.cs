@@ -2,26 +2,34 @@ using HRM.Application.Common.Exceptions;
 using HRM.Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace HRM.API.ExceptionHandling;
 
 /// <summary>
 /// Turns exceptions into RFC 7807 ProblemDetails responses (mapping in docs/security.md §3).
-/// Internals (stack traces) never reach the client.
+/// Internals (stack traces, SQL) never reach the client.
 /// </summary>
 public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetailsService, ILogger<GlobalExceptionHandler> logger)
     : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        var (status, title) = exception switch
+        var (status, title, detail) = exception switch
         {
-            ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
-            UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
-            ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
-            NotFoundException => (StatusCodes.Status404NotFound, "Not found"),
-            DomainException => (StatusCodes.Status422UnprocessableEntity, "Business rule violated"),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred"),
+            ValidationException e => (StatusCodes.Status400BadRequest, "Validation failed", e.Message),
+            UnauthorizedException e => (StatusCodes.Status401Unauthorized, "Unauthorized", e.Message),
+            ForbiddenAccessException e => (StatusCodes.Status403Forbidden, "Forbidden", e.Message),
+            NotFoundException e => (StatusCodes.Status404NotFound, "Not found", e.Message),
+            ConflictException e => (StatusCodes.Status409Conflict, "Conflict", e.Message),
+            DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflict",
+                "The record was changed by someone else. Reload it and try again."),
+            // Safety net for unique indexes when two requests race past the handler's own check.
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>
+                (StatusCodes.Status409Conflict, "Conflict", "A record with the same unique value already exists."),
+            DomainException e => (StatusCodes.Status422UnprocessableEntity, "Business rule violated", e.Message),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", (string?)null),
         };
 
         if (status >= StatusCodes.Status500InternalServerError)
@@ -32,8 +40,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
             : new ProblemDetails();
         problem.Status = status;
         problem.Title = title;
-        // Only expected (4xx) errors expose their message; 500s stay generic.
-        problem.Detail = status < StatusCodes.Status500InternalServerError ? exception.Message : null;
+        problem.Detail = detail;
 
         httpContext.Response.StatusCode = status;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

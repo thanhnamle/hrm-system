@@ -1,3 +1,4 @@
+using HRM.Application.Common.Exceptions;
 using HRM.Application.Common.Interfaces;
 using HRM.Application.Features.Users.Queries.GetUsers;
 using HRM.Infrastructure.Persistence;
@@ -50,6 +51,28 @@ public sealed class IdentityService(
             return null;
 
         return await ToAuthUserAsync(user, cancellationToken);
+    }
+
+    public Task<Guid?> FindUserIdByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default) =>
+        db.Users.Where(u => u.EmployeeId == employeeId).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task UpdateLoginEmailAsync(Guid employeeId, string email, CancellationToken cancellationToken = default)
+    {
+        var user = await db.Users.SingleOrDefaultAsync(u => u.EmployeeId == employeeId, cancellationToken);
+        if (user is null)
+            return; // employee has no login yet
+
+        var normalized = userManager.NormalizeEmail(email);
+        if (await db.Users.AnyAsync(u => u.NormalizedEmail == normalized && u.Id != user.Id, cancellationToken))
+            throw new ConflictException($"Another account already uses '{email}'.");
+
+        // Set directly instead of UserManager.SetEmailAsync, which would save on its own.
+        // The user name is the email, so both change; a new security stamp invalidates old Identity tokens.
+        user.Email = email;
+        user.NormalizedEmail = normalized;
+        user.UserName = email;
+        user.NormalizedUserName = userManager.NormalizeName(email);
+        user.SecurityStamp = Guid.NewGuid().ToString();
     }
 
     public async Task<IReadOnlyList<UserAccountDto>> GetUsersAsync(CancellationToken cancellationToken = default)

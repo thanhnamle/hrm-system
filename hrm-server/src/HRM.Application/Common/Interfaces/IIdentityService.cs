@@ -17,6 +17,15 @@ public interface IIdentityService
     /// <summary>Returns null when the account no longer exists or may no longer sign in.</summary>
     Task<AuthUser?> FindActiveUserAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    Task<Guid?> FindUserIdByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Points the employee's login (if any) at a new email. The change is only tracked: it is saved
+    /// together with the employee by the caller's SaveChangesAsync, so both succeed or neither does.
+    /// Throws <see cref="Exceptions.ConflictException"/> if another account already uses the email.
+    /// </summary>
+    Task UpdateLoginEmailAsync(Guid employeeId, string email, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<UserAccountDto>> GetUsersAsync(CancellationToken cancellationToken = default);
 }
 

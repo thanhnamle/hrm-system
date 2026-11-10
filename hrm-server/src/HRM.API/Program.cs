@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using HRM.API.ExceptionHandling;
 using HRM.API.OpenApi;
 using HRM.API.Security;
@@ -25,9 +26,11 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     builder.Services.AddPermissionPolicies();
-    builder.Services.AddLoginRateLimiting();
+    builder.Services.AddLoginRateLimiting(builder.Configuration);
 
-    builder.Services.AddControllers();
+    // Enums travel as names ("Annual", "Pending"), which is what the Angular client and Postman send back.
+    builder.Services.AddControllers()
+        .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
     builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
     builder.Services.AddProblemDetails(options =>

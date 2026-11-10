@@ -63,20 +63,28 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | POST | `/api/auth/refresh` | Anonymous (cookie) | |
 | POST | `/api/auth/logout` | Authenticated | |
 | GET | `/api/auth/me` | Authenticated | self |
-| GET | `/api/employees?search=&page=` | `Employees.View` | role scope |
+| GET | `/api/employees?search=&departmentId=&status=&page=&pageSize=` | `Employees.View` | role scope |
 | GET | `/api/employees/{id}` | `Employees.View` | role scope |
 | POST / PUT | `/api/employees`, `/api/employees/{id}` | `Employees.Create` / `Employees.Update` | |
 | POST | `/api/employees/{id}/terminate` | `Employees.Terminate` | |
 | GET | `/api/departments` | `Departments.View` | |
-| POST / PUT / DELETE | `/api/departments/...` | `Departments.Manage` | |
-| GET | `/api/leave-requests/mine` | `Leave.Request` | self |
+| POST / PUT / DELETE | `/api/departments`, `/api/departments/{id}` | `Departments.Manage` | |
+| PUT / DELETE | `/api/departments/{id}/manager` | `Departments.Manage` | manager must belong to the department |
+| GET | `/api/leave-requests/mine?status=` | `Leave.Request` | self |
+| GET | `/api/leave-requests/balance` | `Leave.Request` | self |
 | POST | `/api/leave-requests` | `Leave.Request` | self |
 | POST | `/api/leave-requests/{id}/cancel` | `Leave.Request` | owner only |
 | GET | `/api/leave-requests/pending` | `Leave.Approve` | own dept / all |
 | POST | `/api/leave-requests/{id}/approve`, `/reject` | `Leave.Approve` | own dept, not self |
-| GET | `/api/leave-requests` | `Leave.ViewAll` | |
+| GET | `/api/leave-requests?status=&type=&employeeId=&departmentId=&from=&to=` | `Leave.ViewAll` | |
 | POST | `/api/attendance/check-in`, `/check-out` | `Attendance.Record` | self |
 | GET | `/api/attendance/mine` | `Attendance.Record` | self |
-| GET | `/api/attendance?date=` | `Attendance.View` | role scope |
+| GET | `/api/attendance?date=&departmentId=` | `Attendance.View` | role scope |
 | GET / POST / PUT | `/api/users/...` | `Users.Manage` | |
 | GET | `/api/dashboard` | Authenticated | role-dependent content |
+
+**Conventions**
+- Lists return `{ items, page, pageSize, totalCount, totalPages }`; `pageSize` is 1–100.
+- Enums are strings in JSON (`"Annual"`, `"Pending"`).
+- Create returns `201` with `{ id }`; update, delete and state changes return `204`.
+- Errors are ProblemDetails: `400` validation (with `errors`), `401`, `403` (policy), `404` (missing **or outside your data scope**), `409` (duplicate or concurrent change), `422` (business rule).

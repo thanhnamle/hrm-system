@@ -36,6 +36,8 @@ public class Department : AuditableEntity
     {
         if (manager.Status != EmployeeStatus.Active)
             throw new DomainException("A terminated employee cannot manage a department.");
+        if (manager.DepartmentId != Id)
+            throw new DomainException("The manager must be a member of the department.");
 
         ManagerId = manager.Id;
         Manager = manager;

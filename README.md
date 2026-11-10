@@ -68,6 +68,12 @@ In Development the API applies pending EF Core migrations and seeds demo data on
 
 Login is limited to 5 attempts per minute per IP, and 5 wrong passwords lock an account for 15 minutes.
 
+### Testing with Postman
+
+Import both files from [postman/](postman/): `HRM.postman_collection.json` and `HRM.local.postman_environment.json`. Select the **HRM Local** environment, set `password` to your `Seed:DefaultPassword`, start the API, then run the collection (Collection Runner) or send requests one by one starting with **00 Setup**. It covers every endpoint for every role, including the 403/404 cases. Folders 00–06 use five logins, so wait a minute before **07 Logout** (rate limit).
+
+To start over with fresh demo data, drop the database volume: `docker compose down -v` then `docker compose up -d db` (the API re-seeds on its next start).
+
 ### Demo accounts (Development seed)
 
 All use the `Seed:DefaultPassword` from your user-secrets.

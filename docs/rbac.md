@@ -41,6 +41,10 @@ One role per user (keeps the model simple).
 
 The API returns the current user's permission list from `GET /api/auth/me`; Angular uses it for layer 0.
 
+**Accounts without an employee record** (the seeded `admin@hrm.local`) hold every permission but cannot request leave, check in or review leave: those actions are recorded against an employee (`ReviewedById`), so the API answers `403` with an explanation. HR does the reviewing.
+
+**Out-of-scope records return 404, not 403**, so a caller cannot probe which employees or requests exist.
+
 ## 4. Implementation
 
 ### Permissions — defined once in the Application layer

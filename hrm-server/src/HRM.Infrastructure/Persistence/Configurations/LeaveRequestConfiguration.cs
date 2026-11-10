@@ -17,6 +17,10 @@ public class LeaveRequestConfiguration : IEntityTypeConfiguration<LeaveRequest>
         builder.Property(r => r.Reason).HasMaxLength(500).IsRequired();
         builder.Property(r => r.ReviewNote).HasMaxLength(500);
 
+        // Concurrency token (PostgreSQL xmin, no real column): two reviewers acting on the same request
+        // at once cannot both succeed, so annual leave is never deducted twice.
+        builder.Property<uint>("Version").IsRowVersion();
+
         // reviewed_by_id → employees.id (no navigation property on the entity)
         builder.HasOne<Employee>()
             .WithMany()

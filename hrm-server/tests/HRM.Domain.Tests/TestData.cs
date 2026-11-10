@@ -10,6 +10,6 @@ internal static class TestData
 
     public static readonly DateTimeOffset Now = new(2026, 11, 2, 9, 0, 0, TimeSpan.Zero);
 
-    public static Employee NewEmployee(string code = "emp-0001", string email = "An.Nguyen@HRM.local") =>
-        Employee.Hire(code, "An", "Nguyen", email, "Developer", Guid.CreateVersion7(), new DateOnly(2024, 1, 15));
+    public static Employee NewEmployee(string code = "emp-0001", string email = "An.Nguyen@HRM.local", Guid? departmentId = null) =>
+        Employee.Hire(code, "An", "Nguyen", email, "Developer", departmentId ?? Guid.CreateVersion7(), new DateOnly(2024, 1, 15));
 }

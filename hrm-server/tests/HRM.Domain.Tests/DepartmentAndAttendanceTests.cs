@@ -17,7 +17,7 @@ public class DepartmentTests
     public void AssignManager_sets_manager()
     {
         var department = Department.Create("ENG", "Engineering");
-        var manager = NewEmployee();
+        var manager = NewEmployee(departmentId: department.Id);
 
         department.AssignManager(manager);
 
@@ -27,10 +27,21 @@ public class DepartmentTests
     [Fact]
     public void Terminated_employee_cannot_be_manager()
     {
-        var manager = NewEmployee();
+        var department = Department.Create("ENG", "Engineering");
+        var manager = NewEmployee(departmentId: department.Id);
         manager.Terminate();
 
-        Should.Throw<DomainException>(() => Department.Create("ENG", "Engineering").AssignManager(manager));
+        Should.Throw<DomainException>(() => department.AssignManager(manager));
+    }
+
+    [Fact]
+    public void Manager_must_belong_to_the_department()
+    {
+        var department = Department.Create("ENG", "Engineering");
+        var outsider = NewEmployee(departmentId: Guid.CreateVersion7());
+
+        Should.Throw<DomainException>(() => department.AssignManager(outsider));
+        department.ManagerId.ShouldBeNull();
     }
 }
 
