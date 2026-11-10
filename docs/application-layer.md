@@ -63,6 +63,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | POST | `/api/auth/refresh` | Anonymous (cookie) | |
 | POST | `/api/auth/logout` | Authenticated | |
 | GET | `/api/auth/me` | Authenticated | self |
+| POST | `/api/auth/change-password` | Authenticated | self; signs out every session |
 | GET | `/api/employees?search=&departmentId=&status=&page=&pageSize=` | `Employees.View` | role scope |
 | GET | `/api/employees/{id}` | `Employees.View` | role scope |
 | POST / PUT | `/api/employees`, `/api/employees/{id}` | `Employees.Create` / `Employees.Update` | |
@@ -80,7 +81,9 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | POST | `/api/attendance/check-in`, `/check-out` | `Attendance.Record` | self |
 | GET | `/api/attendance/mine` | `Attendance.Record` | self |
 | GET | `/api/attendance?date=&departmentId=` | `Attendance.View` | role scope |
-| GET / POST / PUT | `/api/users/...` | `Users.Manage` | |
+| GET / POST | `/api/users` | `Users.Manage` | list; create the login for an employee |
+| PUT | `/api/users/{id}/role` | `Users.Manage` | not your own; revokes the user's sessions |
+| POST | `/api/users/{id}/lock`, `/unlock`, `/reset-password` | `Users.Manage` | cannot lock yourself; lock and reset revoke sessions |
 | GET | `/api/dashboard` | Authenticated | role-dependent content |
 
 **Conventions**

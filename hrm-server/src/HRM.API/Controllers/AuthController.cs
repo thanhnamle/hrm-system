@@ -1,5 +1,6 @@
 using HRM.API.Security;
 using HRM.Application.Features.Auth;
+using HRM.Application.Features.Auth.ChangePassword;
 using HRM.Application.Features.Auth.GetMe;
 using HRM.Application.Features.Auth.Login;
 using HRM.Application.Features.Auth.Logout;
@@ -40,6 +41,15 @@ public sealed class AuthController(ISender sender) : ControllerBase
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         await sender.Send(new LogoutCommand(Request.Cookies[RefreshCookieName]), cancellationToken);
+        Response.Cookies.Delete(RefreshCookieName, CookieOptions(expires: null));
+        return NoContent();
+    }
+
+    /// <summary>Signs out every session, including this one; sign in again with the new password.</summary>
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordCommand command, CancellationToken cancellationToken)
+    {
+        await sender.Send(command, cancellationToken);
         Response.Cookies.Delete(RefreshCookieName, CookieOptions(expires: null));
         return NoContent();
     }

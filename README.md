@@ -50,7 +50,7 @@ Requirements: .NET 10 SDK, Docker Desktop.
    ```bash
    cd hrm-server
    dotnet build hrm-server.slnx
-   dotnet test hrm-server.slnx
+   dotnet test hrm-server.slnx   # integration tests start PostgreSQL in Docker, so Docker must be running
    dotnet run --project src/HRM.API --launch-profile http
    ```
 
@@ -70,7 +70,7 @@ Login is limited to 5 attempts per minute per IP, and 5 wrong passwords lock an 
 
 ### Testing with Postman
 
-Import both files from [postman/](postman/): `HRM.postman_collection.json` and `HRM.local.postman_environment.json`. Select the **HRM Local** environment, set `password` to your `Seed:DefaultPassword`, start the API, then run the collection (Collection Runner) or send requests one by one starting with **00 Setup**. It covers every endpoint for every role, including the 403/404 cases. Folders 00–06 use five logins, so wait a minute before **07 Logout** (rate limit).
+Import both files from [postman/](postman/): `HRM.postman_collection.json` and `HRM.local.postman_environment.json`. Select the **HRM Local** environment, set `password` to your `Seed:DefaultPassword`, start the API, then run the collection (Collection Runner) or send requests one by one starting with **00 Setup**. It covers every endpoint for every role, including the 403/404 cases. Folders 00–06 use five logins, so wait a minute before **07 Logout** and **08 Users** (rate limit). **08 Users** creates its own employee and account, so your demo logins never change.
 
 To start over with fresh demo data, drop the database volume: `docker compose down -v` then `docker compose up -d db` (the API re-seeds on its next start).
 

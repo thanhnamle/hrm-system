@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- Boots the real API in memory; PostgreSQL runs in Docker via Testcontainers (Docker must be running). -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/HRM.API/HRM.API.csproj" />
   </ItemGroup>
 </Project>

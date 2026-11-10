@@ -6,6 +6,7 @@ using HRM.Infrastructure.Persistence;
 using HRM.Infrastructure.Persistence.Interceptors;
 using HRM.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +47,8 @@ public static class DependencyInjection
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddRoles<AppRole>()
-            .AddEntityFrameworkStores<AppDbContext>();
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders(); // the admin password reset uses a one-time reset token internally
 
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddJwtAuthentication(configuration);

@@ -27,6 +27,22 @@ public interface IIdentityService
     Task UpdateLoginEmailAsync(Guid employeeId, string email, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UserAccountDto>> GetUsersAsync(CancellationToken cancellationToken = default);
+
+    // --- Account management. All throw NotFoundException for an unknown user id, and
+    //     ValidationException (field "Password"/"NewPassword") when a password breaks the policy. ---
+
+    /// <summary>Creates the login for an employee; the login email is the employee's email.</summary>
+    Task<Guid> CreateUserAsync(Guid employeeId, string email, string role, string password, CancellationToken cancellationToken = default);
+
+    Task ChangeRoleAsync(Guid userId, string role, CancellationToken cancellationToken = default);
+
+    /// <summary>Locked accounts cannot sign in or refresh until unlocked.</summary>
+    Task SetLockedAsync(Guid userId, bool locked, CancellationToken cancellationToken = default);
+
+    Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken = default);
+
+    /// <summary>Throws ValidationException (field "CurrentPassword") if the current password is wrong.</summary>
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
 }
 
 /// <summary>An account that is allowed to sign in. One role per user.</summary>

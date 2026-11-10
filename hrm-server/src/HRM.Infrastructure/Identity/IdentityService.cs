@@ -94,6 +94,83 @@ public sealed class IdentityService(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<Guid> CreateUserAsync(Guid employeeId, string email, string role, string password, CancellationToken cancellationToken = default)
+    {
+        if (await db.Users.AnyAsync(u => u.EmployeeId == employeeId, cancellationToken))
+            throw new ConflictException("This employee already has a login account.");
+        if (await userManager.FindByEmailAsync(email) is not null)
+            throw new ConflictException($"Another account already uses '{email}'.");
+
+        var user = new AppUser { UserName = email, Email = email, EmailConfirmed = true, EmployeeId = employeeId };
+
+        // CreateAsync and AddToRoleAsync each save; a transaction keeps "account without a role" from ever existing.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        ThrowIfFailed(await userManager.CreateAsync(user, password), "Password");
+        ThrowIfFailed(await userManager.AddToRoleAsync(user, role), "Role");
+        await transaction.CommitAsync(cancellationToken);
+
+        logger.LogInformation("Created account {UserId} for employee {EmployeeId} with role {Role}", user.Id, employeeId, role);
+        return user.Id;
+    }
+
+    public async Task ChangeRoleAsync(Guid userId, string role, CancellationToken cancellationToken = default)
+    {
+        var user = await FindAsync(userId);
+        var current = await userManager.GetRolesAsync(user);
+        if (current.SequenceEqual([role]))
+            return;
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        ThrowIfFailed(await userManager.RemoveFromRolesAsync(user, current), "Role");
+        ThrowIfFailed(await userManager.AddToRoleAsync(user, role), "Role");
+        await transaction.CommitAsync(cancellationToken);
+
+        logger.LogInformation("Changed role of user {UserId} from {OldRole} to {NewRole}", userId, string.Join(",", current), role);
+    }
+
+    public async Task SetLockedAsync(Guid userId, bool locked, CancellationToken cancellationToken = default)
+    {
+        var user = await FindAsync(userId);
+
+        // Seeded and created accounts have LockoutEnabled = true; an admin lock lasts until unlocked.
+        ThrowIfFailed(await userManager.SetLockoutEndDateAsync(user, locked ? DateTimeOffset.MaxValue : null), "User");
+        if (!locked)
+            ThrowIfFailed(await userManager.ResetAccessFailedCountAsync(user), "User");
+
+        logger.LogInformation("User {UserId} {Action}", userId, locked ? "locked" : "unlocked");
+    }
+
+    public async Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var user = await FindAsync(userId);
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        ThrowIfFailed(await userManager.ResetPasswordAsync(user, token, newPassword), "NewPassword");
+        logger.LogInformation("Password of user {UserId} was reset by an administrator", userId);
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var user = await FindAsync(userId);
+        if (!await userManager.CheckPasswordAsync(user, currentPassword))
+            throw ValidationException.For("CurrentPassword", "Current password is incorrect.");
+
+        ThrowIfFailed(await userManager.ChangePasswordAsync(user, currentPassword, newPassword), "NewPassword");
+        logger.LogInformation("User {UserId} changed their password", userId);
+    }
+
+    private async Task<AppUser> FindAsync(Guid userId) =>
+        await userManager.FindByIdAsync(userId.ToString()) ?? throw new NotFoundException("User", userId);
+
+    /// <summary>Identity reports policy failures (password too weak, ...) as results; surface them as a 400.</summary>
+    private static void ThrowIfFailed(IdentityResult result, string field)
+    {
+        if (!result.Succeeded)
+            throw new ValidationException(new Dictionary<string, string[]>
+            {
+                [field] = result.Errors.Select(e => e.Description).ToArray(),
+            });
+    }
+
     /// <summary>Null when the account has no role or belongs to a terminated employee.</summary>
     private async Task<AuthUser?> ToAuthUserAsync(AppUser user, CancellationToken cancellationToken)
     {
