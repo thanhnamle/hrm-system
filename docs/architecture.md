@@ -84,7 +84,7 @@ HR Management System/
 │       ├── HRM.Domain.Tests/        → Domain
 │       ├── HRM.Application.Tests/   → Application
 │       └── HRM.API.IntegrationTests/ → API
-├── hrm-client/                      (Angular + Tailwind, from Day 6)
+├── hrm-client/                      (Angular 22 + Tailwind v4, see hrm-client/README.md)
 ├── docs/
 ├── docker-compose.yml               (Day 1)
 ├── .env.example                     (Day 1)
@@ -151,13 +151,20 @@ volumes:
 
 ## 6. Frontend structure (Angular + Tailwind)
 
+Angular 22 (standalone, signals, zoneless, OnPush by default), Tailwind CSS v4 (tokens in `src/styles.css`), Vitest, ESLint + Prettier.
+
+**Environments.** The browser always calls its own origin at `/api`: `proxy.conf.json` forwards it to `http://localhost:5183` during `ng serve`, Nginx forwards it to the API container in production. Both `environment.ts` files therefore use `apiBaseUrl: '/api'`; they hold no secrets because the whole bundle is public.
+
+**Layering:** `features` use `shared` and `core`. `core`, `shared` and `layout` never import `features` (an ESLint error). Features don't import each other (a convention, checked in review).
+
 ```
 hrm-client/src/app/
+├── app.config.ts · app.routes.ts    providers; top-level routes, every page lazy-loaded
 ├── core/
-│   ├── auth/        auth.service.ts (signals: user, permissions), auth.interceptor.ts,
-│   │                refresh.interceptor.ts, auth.guard.ts, permission.guard.ts
+│   ├── auth/        permissions.ts (same names as the API), auth.service.ts (signals: user, permissions),
+│   │                auth.interceptor.ts, refresh.interceptor.ts, auth.guard.ts, permission.guard.ts
 │   ├── http/        error.interceptor.ts (ProblemDetails → toast)
-│   └── models/      DTO interfaces matching the API
+│   └── models/      DTO interfaces matching the API (common, auth, employee, department, leave, attendance, dashboard, user)
 ├── shared/
 │   ├── ui/          button, input, table, pagination, modal, badge, toast (Tailwind)
 │   └── directives/  has-permission.directive.ts

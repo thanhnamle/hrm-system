@@ -13,7 +13,7 @@ A simple HR Management System: employees, departments, leave requests, attendanc
 
 ```
 hrm-server/   .NET solution (src/ + tests/)
-hrm-client/   Angular app (coming on Day 6)
+hrm-client/   Angular app (see hrm-client/README.md)
 docs/         plan, architecture, security, RBAC, draw.io diagrams
 ```
 
@@ -94,6 +94,18 @@ dotnet tool restore
 dotnet ef migrations add <Name> --project src/HRM.Infrastructure --startup-project src/HRM.API --output-dir Persistence/Migrations
 dotnet ef database update --project src/HRM.Infrastructure --startup-project src/HRM.API
 ```
+
+## Getting started (frontend)
+
+Requirements: Node.js 22.22+, 24.15+ or 26+, and the backend running (above).
+
+```bash
+cd hrm-client
+npm install
+npm start
+```
+
+Open http://localhost:4200. The dev server forwards `/api` to the API on port 5183. Details in [hrm-client/README.md](hrm-client/README.md).
 
 ## Documentation
 
