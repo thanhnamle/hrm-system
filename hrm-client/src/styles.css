@@ -1,0 +1,42 @@
+/*
+ * Global styles. Tailwind v4 is configured here in CSS (no tailwind.config.js):
+ * @theme defines design tokens, which become utilities (bg-brand-600, text-muted, font-sans, ...).
+ * Component-specific styling uses Tailwind classes in templates; keep this file small.
+ */
+@import 'tailwindcss';
+
+@theme {
+  /* System font stack: no web-font download, and it matches each OS. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Brand (indigo) — primary buttons, links, active menu item. */
+  --color-brand-50: oklch(0.962 0.018 272.3);
+  --color-brand-100: oklch(0.93 0.034 272.8);
+  --color-brand-500: oklch(0.585 0.233 277.1);
+  --color-brand-600: oklch(0.511 0.262 276.9);
+  --color-brand-700: oklch(0.457 0.24 277);
+
+  /* Surfaces and text. */
+  --color-surface: oklch(1 0 0);
+  --color-canvas: oklch(0.985 0.002 247.8);
+  --color-border: oklch(0.928 0.006 264.5);
+  --color-ink: oklch(0.21 0.034 264.7);
+  --color-muted: oklch(0.551 0.027 264.4);
+
+  /* Status colors — leave and attendance badges, toasts. */
+  --color-success: oklch(0.627 0.17 149.2);
+  --color-warning: oklch(0.769 0.165 70.1);
+  --color-danger: oklch(0.577 0.215 27.3);
+}
+
+@layer base {
+  html {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+
+  /* Visible keyboard focus everywhere; never remove it without a replacement. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
