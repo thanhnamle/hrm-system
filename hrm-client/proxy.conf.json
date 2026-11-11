@@ -1,0 +1,12 @@
+{
+  "/api": {
+    "target": "http://localhost:5183",
+    "secure": false,
+    "logLevel": "warn"
+  },
+  "/health": {
+    "target": "http://localhost:5183",
+    "secure": false,
+    "logLevel": "warn"
+  }
+}
