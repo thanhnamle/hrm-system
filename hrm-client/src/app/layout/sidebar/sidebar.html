@@ -1,0 +1,13 @@
+<nav aria-label="Main" class="flex h-full flex-col gap-1 p-3">
+  <a routerLink="/dashboard" class="mb-4 px-3 py-2 text-lg font-semibold text-brand-700">HRM</a>
+  @for (item of items; track item.route) {
+    <a
+      [routerLink]="item.route"
+      routerLinkActive="bg-brand-50 text-brand-700 font-medium"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="rounded-md px-3 py-2 text-sm text-ink hover:bg-canvas"
+    >
+      {{ item.label }}
+    </a>
+  }
+</nav>
