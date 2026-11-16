@@ -1,5 +1,7 @@
 # HR Management System
 
+[![CI](https://github.com/thanhnamle/hrm-system/actions/workflows/ci.yml/badge.svg)](https://github.com/thanhnamle/hrm-system/actions/workflows/ci.yml)
+
 A simple HR Management System: employees, departments, leave requests, attendance, and role-based access (Admin, HR, Manager, Employee).
 
 | Part | Stack |
