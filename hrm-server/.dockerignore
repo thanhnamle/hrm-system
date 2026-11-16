@@ -1,0 +1,11 @@
+# Keep the build context small and free of local state.
+**/bin/
+**/obj/
+**/*.user
+**/appsettings.*.local.json
+.vs/
+.vscode/
+.idea/
+tests/
+TestResults/
+*.md
