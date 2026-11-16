@@ -1,6 +1,13 @@
 name: hrm
 
-# Day 1: database only. The api (ASP.NET Core) and web (Nginx + Angular) services are added on Day 10.
+# The whole system: PostgreSQL, the API and the web front end (Nginx serving Angular, proxying /api).
+#   cp .env.example .env    # then fill in the values
+#   docker compose up -d --build
+#   open http://localhost:8080   (or WEB_PORT)
+#
+# For development you can still start only the database (docker compose up -d db)
+# and run the API with `dotnet run` and the client with `ng serve`.
+
 services:
   db:
     image: postgres:17
@@ -20,6 +27,50 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build:
+      context: ./hrm-server
+      dockerfile: src/HRM.API/Dockerfile
+    image: hrm-api
+    container_name: hrm-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # "db" is the service name above; port 5432 inside the Docker network, whatever DB_PORT is.
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${DB_NAME:-hrm};Username=${DB_USER:-hrm};Password=${DB_PASSWORD}"
+      # Not ":?"-required here, so `docker compose up -d db` keeps working with a DB-only .env;
+      # the API refuses to start without them and says which one is missing.
+      Jwt__Key: ${JWT_KEY:-}
+      # Demo setup: create the schema and the sample company on first start (both are idempotent).
+      # A real production deploy runs migrations as a release step and never seeds demo users.
+      Database__MigrateOnStartup: "true"
+      Database__SeedDemoData: "true"
+      Seed__DefaultPassword: ${SEED_PASSWORD:-}
+      # Behind Nginx: read the client IP from X-Forwarded-For (login rate limiting is per IP).
+      ReverseProxy__Enabled: "true"
+    # No ports: only Nginx (same Docker network) can reach the API.
+
+  web:
+    build:
+      context: ./hrm-client
+    image: hrm-web
+    container_name: hrm-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    healthcheck:
+      # Through Nginx to the API's /health, which also checks the database: green = whole stack up.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
 volumes:
   pgdata:
