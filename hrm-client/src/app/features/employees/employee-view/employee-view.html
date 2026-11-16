@@ -53,6 +53,24 @@
           </dd>
         </div>
         <div>
+          <dt class="text-muted">Login account</dt>
+          <dd>
+            @if (profile.hasValue()) {
+              @let account = profile.value()?.account;
+              @if (account) {
+                <app-badge tone="brand">{{ account.role }}</app-badge>
+                @if (account.isLockedOut) {
+                  <app-badge tone="danger" class="ml-1">Locked</app-badge>
+                }
+              } @else {
+                <span class="text-muted">No login yet</span>
+              }
+            } @else {
+              <span class="text-muted">…</span>
+            }
+          </dd>
+        </div>
+        <div>
           <dt class="text-muted">Position</dt>
           <dd>{{ e.position }}</dd>
         </div>
@@ -79,6 +97,8 @@
       </p>
     </section>
   </div>
+
+  <app-employee-profile [employeeId]="e.id" [profile]="profile" [editable]="profileEditable()" />
 } @else if (employee.isLoading()) {
   <app-loading label="Loading employee…" />
 } @else if (notFound()) {

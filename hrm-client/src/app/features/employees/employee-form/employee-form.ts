@@ -47,6 +47,7 @@ export class EmployeeForm {
     hireDate: [todayIso(), Validators.required],
     phone: ['', [Validators.maxLength(20), Validators.pattern(PHONE_PATTERN)]],
     dateOfBirth: [''],
+    changeNote: ['', Validators.maxLength(500)],
   });
 
   constructor() {
@@ -63,6 +64,7 @@ export class EmployeeForm {
         hireDate: e.hireDate,
         phone: e.phone ?? '',
         dateOfBirth: e.dateOfBirth ?? '',
+        changeNote: '',
       });
       this.form.controls.hireDate.disable();
     });
@@ -86,9 +88,10 @@ export class EmployeeForm {
       phone: v.phone || null,
       dateOfBirth: v.dateOfBirth || null,
     };
+    const changeNote = v.changeNote || null;
     const id = this.id();
     const request: Observable<{ id: string } | void> = id
-      ? this.api.update(id, body)
+      ? this.api.update(id, { ...body, changeNote })
       : this.api.create({ ...body, hireDate: v.hireDate });
 
     request.subscribe({

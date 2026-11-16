@@ -54,5 +54,10 @@ export interface CreateEmployeeRequest {
   dateOfBirth?: IsoDate | null;
 }
 
-/** PUT /api/employees/{id}. Changing departmentId transfers the employee. */
-export type UpdateEmployeeRequest = Omit<CreateEmployeeRequest, 'hireDate'>;
+/**
+ * PUT /api/employees/{id}. A new position or department is recorded in the job history as of
+ * today; changeNote explains it there (e.g. "Promotion").
+ */
+export type UpdateEmployeeRequest = Omit<CreateEmployeeRequest, 'hireDate'> & {
+  changeNote?: string | null;
+};

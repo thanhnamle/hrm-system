@@ -1,0 +1,245 @@
+@if (data(); as p) {
+  <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <!-- Career at the company -->
+    <section class="card lg:col-span-1" aria-labelledby="history-heading">
+      <h2 id="history-heading" class="mb-4 font-semibold">Job history</h2>
+      <ol class="relative ml-2 border-l border-border">
+        @for (h of p.jobHistory; track h.id) {
+          <li class="mb-5 ml-5 last:mb-0">
+            <span
+              class="absolute -left-1.5 mt-1.5 size-3 rounded-full border-2 border-surface"
+              [class.bg-brand-600]="h.changeType !== 'Terminated'"
+              [class.bg-muted]="h.changeType === 'Terminated'"
+              aria-hidden="true"
+            ></span>
+            <p class="text-xs text-muted">{{ h.effectiveDate | date: 'mediumDate' }}</p>
+            <p class="font-medium">{{ changeLabel(h.changeType) }}</p>
+            <p class="text-sm">{{ h.position }} · {{ h.departmentName }}</p>
+            @if (h.note) {
+              <p class="mt-0.5 text-sm text-muted italic">{{ h.note }}</p>
+            }
+          </li>
+        }
+      </ol>
+    </section>
+
+    <div class="space-y-6 lg:col-span-2">
+      <!-- Skills -->
+      <section class="card" aria-labelledby="skills-heading">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 id="skills-heading" class="font-semibold">Skills</h2>
+          @if (editable() && !editingSkills()) {
+            <button type="button" class="btn-ghost px-2 py-1" (click)="editSkills()">Edit</button>
+          }
+        </div>
+        @if (editingSkills()) {
+          <label class="label" for="skills">Skills, separated by commas</label>
+          <input
+            id="skills"
+            class="input"
+            [value]="skillsText()"
+            (input)="skillsText.set($any($event.target).value)"
+            placeholder="C#, SQL, Angular"
+          />
+          <div class="mt-3 flex justify-end gap-2">
+            <button type="button" class="btn-secondary" (click)="editingSkills.set(false)">
+              Cancel
+            </button>
+            <button type="button" class="btn-primary" (click)="saveSkills()">Save</button>
+          </div>
+        } @else if (p.skills.length) {
+          <ul class="flex flex-wrap gap-2">
+            @for (skill of p.skills; track skill) {
+              <li class="rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700">{{ skill }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-muted">No skills added.</p>
+        }
+      </section>
+
+      <!-- Education, certificates, previous jobs -->
+      <section class="card" aria-labelledby="cv-entries-heading">
+        <h2 id="cv-entries-heading" class="mb-4 font-semibold">Education &amp; experience</h2>
+        <div class="space-y-6">
+          @for (section of sections; track section.type) {
+            <div>
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="text-sm font-semibold tracking-wide text-muted uppercase">
+                  {{ section.title }}
+                </h3>
+                @if (editable()) {
+                  <button type="button" class="btn-ghost px-2 py-1" (click)="openAdd(section.type)">
+                    Add
+                  </button>
+                }
+              </div>
+              @let entries = byType(section.type);
+              @if (entries.length) {
+                <ul class="divide-y divide-border">
+                  @for (q of entries; track q.id) {
+                    <li class="flex items-start justify-between gap-4 py-3">
+                      <div>
+                        <p class="font-medium">{{ q.title }}</p>
+                        <p class="text-sm">{{ q.organization }}</p>
+                        @if (q.startDate || q.endDate) {
+                          <p class="text-xs text-muted">
+                            {{ q.startDate ? (q.startDate | date: 'MMM y') : '…' }} –
+                            {{ q.endDate ? (q.endDate | date: 'MMM y') : 'present' }}
+                          </p>
+                        }
+                        @if (q.description) {
+                          <p class="mt-1 text-sm text-muted">{{ q.description }}</p>
+                        }
+                      </div>
+                      @if (editable()) {
+                        <div class="flex shrink-0 gap-1">
+                          <button type="button" class="btn-ghost px-2 py-1" (click)="openEdit(q)">
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-ghost px-2 py-1 text-danger"
+                            (click)="removeQualification(q)"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-sm text-muted">{{ section.empty }}</p>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- CV file -->
+      <section class="card" aria-labelledby="cv-heading">
+        <h2 id="cv-heading" class="mb-3 font-semibold">CV</h2>
+        @if (p.cv; as cv) {
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="font-medium">{{ cv.fileName }}</p>
+              <p class="text-xs text-muted">
+                PDF · {{ size(cv.sizeBytes) }} · uploaded {{ cv.uploadedAt | date: 'medium' }}
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" class="btn-secondary" (click)="download(cv.fileName)">
+                Download
+              </button>
+              @if (editable()) {
+                <button type="button" class="btn-ghost text-danger" (click)="removeCv()">
+                  Delete
+                </button>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="text-sm text-muted">No CV uploaded.</p>
+        }
+        @if (editable()) {
+          <div class="mt-4 border-t border-border pt-4">
+            <label class="btn-secondary cursor-pointer" [class.opacity-60]="uploading()">
+              {{ uploading() ? 'Uploading…' : p.cv ? 'Replace CV' : 'Upload CV' }}
+              <input
+                type="file"
+                class="sr-only"
+                accept="application/pdf,.pdf"
+                [disabled]="uploading()"
+                (change)="upload($event)"
+              />
+            </label>
+            <p class="mt-2 text-xs text-muted">PDF only, up to {{ maxCvMb }} MB.</p>
+          </div>
+        }
+      </section>
+    </div>
+  </div>
+} @else if (profile().isLoading()) {
+  <p class="mt-6 text-sm text-muted">Loading profile…</p>
+}
+
+<app-modal [title]="modalTitle()" [open]="editing() !== null" (closed)="editing.set(null)">
+  <form
+    id="qualification-form"
+    class="space-y-4"
+    [formGroup]="qualificationForm"
+    (ngSubmit)="saveQualification()"
+    novalidate
+  >
+    @if (qualificationErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of qualificationErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+    <app-form-field label="Type" for="q-type" [control]="qualificationForm.controls.type" required>
+      <select id="q-type" class="input" formControlName="type">
+        <option value="Education">Education</option>
+        <option value="Certificate">Certificate</option>
+        <option value="PreviousJob">Previous job</option>
+      </select>
+    </app-form-field>
+    <app-form-field
+      label="Title"
+      for="q-title"
+      [control]="qualificationForm.controls.title"
+      required
+      hint="Degree, certificate name or job title."
+    >
+      <input id="q-title" class="input" formControlName="title" aria-describedby="q-title-error" />
+    </app-form-field>
+    <app-form-field
+      label="Organization"
+      for="q-organization"
+      [control]="qualificationForm.controls.organization"
+      required
+      hint="School, issuer or employer."
+    >
+      <input
+        id="q-organization"
+        class="input"
+        formControlName="organization"
+        aria-describedby="q-organization-error"
+      />
+    </app-form-field>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <app-form-field label="From" for="q-start" [control]="qualificationForm.controls.startDate">
+        <input id="q-start" class="input" type="date" formControlName="startDate" />
+      </app-form-field>
+      <app-form-field label="To" for="q-end" [control]="qualificationForm.controls.endDate">
+        <input
+          id="q-end"
+          class="input"
+          type="date"
+          formControlName="endDate"
+          aria-describedby="q-end-error"
+        />
+      </app-form-field>
+    </div>
+    <app-form-field
+      label="Description"
+      for="q-description"
+      [control]="qualificationForm.controls.description"
+    >
+      <textarea id="q-description" class="input" rows="3" formControlName="description"></textarea>
+    </app-form-field>
+  </form>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="editing.set(null)">Cancel</button>
+    <button
+      type="submit"
+      form="qualification-form"
+      class="btn-primary"
+      [disabled]="savingQualification()"
+    >
+      {{ savingQualification() ? 'Saving…' : 'Save' }}
+    </button>
+  </div>
+</app-modal>

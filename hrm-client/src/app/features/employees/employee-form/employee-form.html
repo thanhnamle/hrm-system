@@ -126,6 +126,22 @@
       </app-form-field>
     </div>
 
+    @if (isEdit()) {
+      <app-form-field
+        label="Reason for the job change"
+        for="changeNote"
+        [control]="form.controls.changeNote"
+        hint="Optional. If the position or department changes, this is saved in the job history (e.g. Promotion)."
+      >
+        <input
+          id="changeNote"
+          class="input"
+          formControlName="changeNote"
+          aria-describedby="changeNote-error"
+        />
+      </app-form-field>
+    }
+
     <div class="flex justify-end gap-2 border-t border-border pt-5">
       <a [routerLink]="backLink()" class="btn-secondary">Cancel</a>
       <button type="submit" class="btn-primary" [disabled]="saving()">

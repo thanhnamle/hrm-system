@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { polyfillDialog, provideTestApp, signInAs, typeInto } from '../../../testing/test-helpers';
 import { Permissions } from '../../core/auth/permissions';
 import { EmployeeDetail } from '../../core/models/employee';
+import { EmployeeProfile } from '../../core/models/employee-profile';
 import { ConfirmService } from '../../shared/ui/confirm/confirm.service';
 import { EmployeeForm } from './employee-form/employee-form';
 import { EmployeeList } from './employee-list/employee-list';
@@ -55,6 +56,34 @@ const employee: EmployeeDetail = {
   annualLeaveBalance: 12,
   createdAt: '2026-11-03T04:00:00Z',
   updatedAt: null,
+};
+
+const profile: EmployeeProfile = {
+  employeeId: 'e1',
+  account: null,
+  skills: ['C#', 'SQL'],
+  qualifications: [],
+  jobHistory: [
+    {
+      id: 'h1',
+      changeType: 'Hired',
+      effectiveDate: '2023-11-01',
+      position: 'Developer',
+      departmentId: 'eng',
+      departmentName: 'Engineering',
+      note: null,
+    },
+    {
+      id: 'h2',
+      changeType: 'PositionChanged',
+      effectiveDate: '2025-03-01',
+      position: 'Senior Developer',
+      departmentId: 'eng',
+      departmentName: 'Engineering',
+      note: 'Promotion',
+    },
+  ],
+  cv: null,
 };
 
 describe('Employees feature', () => {
@@ -188,8 +217,14 @@ describe('Employees feature', () => {
       fixture.componentRef.setInput('id', 'e1');
       TestBed.tick(); // send pending resource requests; whenStable() would wait for them
       http.expectOne('/api/employees/e1').flush(employee);
+      http.expectOne('/api/employees/e1/profile').flush(profile);
       await fixture.whenStable();
       const el = fixture.nativeElement as HTMLElement;
+      // Profile: account role, job history and skills are shown.
+      expect(el.textContent).toContain('No login yet');
+      expect(el.textContent).toContain('Position change');
+      expect(el.textContent).toContain('Promotion');
+      expect(el.textContent).toContain('C#');
       // Regression: a date-only value must show the same day in every time zone (was off by one in UTC+7).
       expect(el.textContent).toContain('November 1, 2023');
       const confirm = vi.spyOn(TestBed.inject(ConfirmService), 'ask').mockResolvedValue(true);
@@ -205,9 +240,37 @@ describe('Employees feature', () => {
         .flush(null, { status: 204, statusText: 'No Content' });
       TestBed.tick(); // send pending resource requests; whenStable() would wait for them
       http.expectOne('/api/employees/e1').flush({ ...employee, status: 'Terminated' });
+      http.expectOne('/api/employees/e1/profile').flush({
+        ...profile,
+        jobHistory: [
+          ...profile.jobHistory,
+          { ...profile.jobHistory[1], id: 'h3', changeType: 'Terminated', note: null },
+        ],
+      });
       await fixture.whenStable();
       expect(el.textContent).toContain('Terminated');
       expect(el.textContent).not.toContain('Edit');
+    });
+
+    it('shows the profile read-only to an employee viewing themselves', async () => {
+      signInAs('Employee', [Permissions.EmployeesView]);
+      const fixture = TestBed.createComponent(EmployeeView);
+      fixture.componentRef.setInput('id', 'e1');
+      TestBed.tick();
+      http.expectOne('/api/employees/e1').flush(employee);
+      http.expectOne('/api/employees/e1/profile').flush({
+        ...profile,
+        account: { role: 'Employee', isLockedOut: false },
+        cv: { fileName: 'huy-cv.pdf', sizeBytes: 2048, uploadedAt: '2026-11-16T03:00:00Z' },
+      });
+      await fixture.whenStable();
+      const el = fixture.nativeElement as HTMLElement;
+      const buttons = [...el.querySelectorAll('button')].map((b) => b.textContent?.trim());
+
+      expect(el.textContent).toContain('huy-cv.pdf');
+      expect(buttons).toContain('Download');
+      expect(buttons).not.toContain('Add');
+      expect(el.querySelector('input[type=file]')).toBeNull();
     });
 
     it('treats 404 as "not found or not visible to your role"', async () => {
@@ -216,6 +279,9 @@ describe('Employees feature', () => {
       fixture.componentRef.setInput('id', 'other');
       TestBed.tick(); // send pending resource requests; whenStable() would wait for them
       http.expectOne('/api/employees/other').flush(null, { status: 404, statusText: 'Not Found' });
+      http
+        .expectOne('/api/employees/other/profile')
+        .flush(null, { status: 404, statusText: 'Not Found' });
       await fixture.whenStable();
 
       expect((fixture.nativeElement as HTMLElement).textContent).toContain(
