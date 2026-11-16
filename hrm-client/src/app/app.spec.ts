@@ -21,6 +21,19 @@ describe('App', () => {
   async function open(url: string) {
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl(url);
+    // The dashboard loads its data; answer that request, or whenStable() would wait for it.
+    TestBed.tick();
+    TestBed.inject(HttpTestingController)
+      .match('/api/dashboard')
+      .forEach((r) =>
+        r.flush({
+          role: 'Employee',
+          today: '2030-01-07',
+          organization: null,
+          team: null,
+          personal: null,
+        }),
+      );
     await fixture.whenStable();
     return fixture.nativeElement as HTMLElement;
   }
@@ -43,7 +56,7 @@ describe('App', () => {
 
     expect(router.url).toBe('/dashboard');
     expect(page.querySelector('app-sidebar')).toBeTruthy();
-    expect(page.querySelector('h1')?.textContent).toContain('Dashboard');
+    expect(page.querySelector('h1')?.textContent).toContain('Hello, Huy');
   });
 
   it('shows only the menu items the role may use', async () => {
