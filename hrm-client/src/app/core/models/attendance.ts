@@ -31,3 +31,9 @@ export interface TeamAttendanceQuery extends PageQuery {
   date?: IsoDate; // default: today in the company time zone
   departmentId?: string;
 }
+
+/** GET /api/attendance/today: the company's date (not the browser's) and the caller's record. */
+export interface TodayAttendance {
+  today: IsoDate;
+  record: AttendanceRecord | null;
+}

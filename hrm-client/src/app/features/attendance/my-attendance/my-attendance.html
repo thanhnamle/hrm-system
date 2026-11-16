@@ -1,2 +1,116 @@
-<h1 class="text-2xl font-semibold">My attendance</h1>
-<p class="mt-2 text-muted">Check-in and history arrive in Phase 8.</p>
+<app-page-header
+  title="My attendance"
+  description="Check in when you start work and check out when you leave."
+/>
+
+<section class="card mb-6" aria-labelledby="today-heading">
+  @if (today.hasValue()) {
+    @let t = today.value();
+    @let record = t.record;
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <div>
+        <h2 id="today-heading" class="text-sm text-muted">{{ t.today | date: 'fullDate' }}</h2>
+        @switch (state()) {
+          @case ('none') {
+            <p class="mt-1 text-2xl font-semibold">Not checked in yet</p>
+          }
+          @case ('in') {
+            <p class="mt-1 text-2xl font-semibold">
+              Checked in at {{ record!.checkInAt | date: 'shortTime' }}
+            </p>
+            <p class="text-sm text-muted">Don't forget to check out when you leave.</p>
+          }
+          @case ('out') {
+            <p class="mt-1 text-2xl font-semibold">
+              {{ record!.checkInAt | date: 'shortTime' }} –
+              {{ record!.checkOutAt | date: 'shortTime' }}
+            </p>
+            <p class="text-sm text-muted">
+              Worked {{ record!.workedHours | number: '1.0-2' }} hours today. See you tomorrow!
+            </p>
+          }
+        }
+      </div>
+      @switch (state()) {
+        @case ('none') {
+          <button
+            type="button"
+            class="btn-primary px-8 py-3 text-base"
+            [disabled]="busy()"
+            (click)="checkIn()"
+          >
+            {{ busy() ? 'Checking in…' : 'Check in' }}
+          </button>
+        }
+        @case ('in') {
+          <button
+            type="button"
+            class="btn-secondary px-8 py-3 text-base"
+            [disabled]="busy()"
+            (click)="checkOut()"
+          >
+            {{ busy() ? 'Checking out…' : 'Check out' }}
+          </button>
+        }
+        @case ('out') {
+          <span class="rounded-full bg-success/10 px-4 py-2 text-sm font-medium text-success"
+            >Done for today</span
+          >
+        }
+      }
+    </div>
+  } @else if (today.isLoading()) {
+    <app-loading label="Loading today…" />
+  } @else if (today.error()) {
+    <app-empty-state title="Today's status could not be loaded">
+      <button type="button" class="btn-secondary" (click)="today.reload()">Try again</button>
+    </app-empty-state>
+  }
+</section>
+
+<h2 class="mb-3 font-semibold">History</h2>
+<div class="table-wrap">
+  @if (history.hasValue()) {
+    @let result = history.value();
+    @if (result.items.length) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Day</th>
+            <th scope="col">Check in</th>
+            <th scope="col">Check out</th>
+            <th scope="col" class="text-right">Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of result.items; track r.id) {
+            <tr>
+              <td class="whitespace-nowrap">{{ r.workDate | date: 'EEE, MMM d, y' }}</td>
+              <td>{{ r.checkInAt | date: 'shortTime' }}</td>
+              <td>
+                @if (r.checkOutAt) {
+                  {{ r.checkOutAt | date: 'shortTime' }}
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="text-right">
+                {{ r.workedHours !== null ? (r.workedHours | number: '1.0-2') : '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <app-pagination
+        [page]="result.page"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else {
+      <app-empty-state title="No attendance yet" message="Your check-ins will appear here." />
+    }
+  } @else if (history.isLoading()) {
+    <app-loading label="Loading history…" />
+  }
+</div>

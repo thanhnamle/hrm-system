@@ -1,2 +1,98 @@
-<h1 class="text-2xl font-semibold">Team attendance</h1>
-<p class="mt-2 text-muted">The team view arrives in Phase 8.</p>
+<app-page-header
+  title="Team attendance"
+  description="Who is in, who has left and who is on leave."
+/>
+
+<div class="mb-4 flex flex-wrap items-end gap-3">
+  <div class="w-48">
+    <label class="label" for="date">Day</label>
+    <input
+      id="date"
+      class="input"
+      type="date"
+      [value]="date()"
+      (change)="date.set($any($event.target).value)"
+    />
+  </div>
+  @if (date()) {
+    <button type="button" class="btn-ghost" (click)="date.set('')">Back to today</button>
+  }
+  @if (showDepartmentFilter()) {
+    <div class="w-52">
+      <label class="label" for="department">Department</label>
+      <select id="department" class="input" (change)="department.set($any($event.target).value)">
+        <option value="" [selected]="department() === ''">All departments</option>
+        @for (d of departments.hasValue() ? departments.value() : []; track d.id) {
+          <option [value]="d.id" [selected]="department() === d.id">{{ d.name }}</option>
+        }
+      </select>
+    </div>
+  }
+</div>
+
+@let s = summary();
+<div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-xs text-muted">At work</p>
+    <p class="text-2xl font-semibold">{{ s.Present }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted">Checked out</p>
+    <p class="text-2xl font-semibold">{{ s.CheckedOut }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted">On leave</p>
+    <p class="text-2xl font-semibold">{{ s.OnLeave }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-xs text-muted">Not checked in</p>
+    <p class="text-2xl font-semibold">{{ s.Absent }}</p>
+  </div>
+</div>
+
+<div class="table-wrap">
+  @if (team.hasValue()) {
+    @let result = team.value();
+    @if (result.items.length) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Employee</th>
+            <th scope="col">Department</th>
+            <th scope="col">Check in</th>
+            <th scope="col">Check out</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of result.items; track row.employeeId) {
+            <tr>
+              <td>
+                <div class="font-medium">{{ row.employeeName }}</div>
+                <div class="font-mono text-xs text-muted">{{ row.employeeCode }}</div>
+              </td>
+              <td>{{ row.departmentName }}</td>
+              <td>{{ row.checkInAt ? (row.checkInAt | date: 'shortTime') : '—' }}</td>
+              <td>{{ row.checkOutAt ? (row.checkOutAt | date: 'shortTime') : '—' }}</td>
+              <td><app-badge [status]="row.status" /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <app-pagination
+        [page]="result.page"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else {
+      <app-empty-state title="No active employees in view" />
+    }
+  } @else if (team.isLoading()) {
+    <app-loading label="Loading attendance…" />
+  } @else if (team.error()) {
+    <app-empty-state title="Attendance could not be loaded">
+      <button type="button" class="btn-secondary" (click)="team.reload()">Try again</button>
+    </app-empty-state>
+  }
+</div>
