@@ -42,6 +42,25 @@ public class UserManagementTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task Terminated_employee_cannot_sign_in()
+    {
+        var hr = await api.ClientFor(Accounts.Hr);
+        var employee = EmployeeAccessTests.NewEmployee(await EmployeeAccessTests.NewDepartment(hr), "leaver");
+        var email = (string)employee.GetType().GetProperty("email")!.GetValue(employee)!;
+        var employeeId = (await (await hr.PostJson("/api/employees", employee)).ReadAs<IdResponse>()).Id;
+        await (await (await api.ClientFor(Accounts.Admin)).PostJson("/api/users", new { employeeId, role = "Employee", password = "Start#2026a" }))
+            .ShouldHaveStatus(HttpStatusCode.Created);
+        await (await api.CreateClient().PostJson("/api/auth/login", new { email, password = "Start#2026a" }))
+            .ShouldHaveStatus(HttpStatusCode.OK);
+
+        await (await hr.PostJson($"/api/employees/{employeeId}/terminate")).ShouldHaveStatus(HttpStatusCode.NoContent);
+
+        // Right password, but the employee has left: the same generic 401 as a wrong password.
+        await (await api.CreateClient().PostJson("/api/auth/login", new { email, password = "Start#2026a" }))
+            .ShouldHaveStatus(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task Weak_password_is_rejected_by_the_policy()
     {
         var hr = await api.ClientFor(Accounts.Hr);
