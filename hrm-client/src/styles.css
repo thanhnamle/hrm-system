@@ -75,3 +75,30 @@
 @utility card {
   @apply rounded-lg border border-border bg-surface p-6 shadow-sm;
 }
+
+@layer components {
+  /* Angular adds ng-invalid/ng-touched to reactive form controls, so every form gets this for free. */
+  .input.ng-invalid.ng-touched {
+    @apply border-danger;
+  }
+
+  /* <div class="table-wrap"><table class="data-table">… — scrolls sideways on narrow screens. */
+  .table-wrap {
+    @apply overflow-x-auto rounded-lg border border-border bg-surface;
+  }
+  .data-table {
+    @apply w-full text-left text-sm;
+  }
+  .data-table th {
+    @apply border-b border-border bg-canvas px-4 py-2.5 text-xs font-semibold tracking-wide text-muted uppercase;
+  }
+  .data-table td {
+    @apply border-b border-border px-4 py-3 align-middle;
+  }
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-canvas;
+  }
+}
