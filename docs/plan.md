@@ -9,8 +9,9 @@
 | Authentication (login, refresh token, logout) | Payroll |
 | Users & roles (Admin, HR, Manager, Employee) | Recruitment |
 | Employees (CRUD, search, paging, terminate) | Performance reviews |
+| Employee profile: job history, skills, education, CV (PDF) (*added in week 2*) | Biometric / device check-in |
 | Departments (CRUD, assign manager) | Email notifications |
-| Leave management (request, approve/reject, balance) | File uploads (CV, contracts) |
+| Leave management (request, approve/reject, balance) | Contract documents |
 | Attendance (check-in / check-out, history) | Multi-company / multi-tenancy |
 | Role-based dashboard | |
 
@@ -47,16 +48,18 @@
 
 ## 4. Final checklist (Day 9–10)
 
-- [ ] Every controller action has `[Authorize(Policy = ...)]` or explicit `[AllowAnonymous]`
-- [ ] Every employee-data query calls `ApplyScope`
-- [ ] Manager cannot approve own leave or another department's leave (integration test)
-- [ ] Employee calling `GET /api/employees/{otherId}` → 404/403 (integration test)
-- [ ] Access token not in `localStorage`; refresh cookie is `HttpOnly`
-- [ ] Reused refresh token logs user out everywhere
-- [ ] Login is rate-limited; account locks after 5 failures
-- [ ] No secrets committed (`.env`, keys in `appsettings*.json`)
-- [ ] 500 responses contain no stack trace
-- [ ] Terminated employee cannot log in
+All checked at the end of Day 10. Each item names what proves it.
+
+- [x] Every controller action has `[Authorize(Policy = ...)]` or explicit `[AllowAnonymous]`, plus a fallback policy that requires sign-in (`PermissionPolicyTests`)
+- [x] Every employee-data query calls `ApplyScope` (`EmployeeAccessTests`, `EmployeeProfileTests`)
+- [x] Manager cannot approve own leave or another department's leave (`LeaveAndAttendanceTests`)
+- [x] Employee calling `GET /api/employees/{otherId}` → 404 (`Records_outside_the_scope_are_not_found`)
+- [x] Access token not in `localStorage` (`auth.service.spec.ts`); refresh cookie is `HttpOnly`, `Secure`, `SameSite=Strict`
+- [x] Reused refresh token logs user out everywhere (`Refresh_rotates_and_a_reused_token_revokes_every_session`)
+- [x] Login is rate-limited; account locks after 5 failures (429 checked on the Docker stack, also with a spoofed `X-Forwarded-For`)
+- [x] No secrets committed (`.env` gitignored; keys only in user-secrets / `.env`)
+- [x] 500 responses contain no stack trace (`GlobalExceptionHandler` returns a generic ProblemDetails)
+- [x] Terminated employee cannot log in (`Terminated_employee_cannot_sign_in`)
 
 ## 5. Testing strategy
 

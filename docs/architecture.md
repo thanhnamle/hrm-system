@@ -15,14 +15,16 @@ All three server components run in Docker Compose.
 
 | From → To | Protocol / port | Exposure |
 |---|---|---|
-| Browser → Nginx | HTTPS :443 (HTTP :80 redirects) | Published to host |
-| Nginx → API | HTTP :8080 (`/api/*`) | Internal (`hrm-net`) |
-| API → PostgreSQL | TCP :5432 (Npgsql) | Internal (`hrm-net`) |
+| Browser → Nginx | HTTP, container :80 → host `WEB_PORT` (8080) | Published to host |
+| Nginx → API | HTTP :8080 (`/api/*`, `/health`) | Internal (compose network) |
+| API → PostgreSQL | TCP :5432 (Npgsql) | Internal; also `127.0.0.1:DB_PORT` for development tools |
+
+The Docker setup is a local demo over plain HTTP. In production TLS terminates in front of (or in) Nginx on :443, and HSTS is switched on in `hrm-client/nginx/security-headers.conf`.
 
 ### Request path (numbers match the *Detailed* diagram)
 
-1. Angular interceptor sends HTTPS request + Bearer JWT to Nginx.
-2. Nginx proxies `/api/*` to the API on :8080.
+1. Angular interceptor sends the request + Bearer JWT to Nginx (same origin).
+2. Nginx proxies `/api/*` to the API on :8080, replacing `X-Forwarded-For` with the client IP; the API reads it (`ReverseProxy:Enabled`) so the login rate limiter sees real clients.
 3. Middleware (exceptions → Serilog → rate limiter → JWT → policies) reaches the controller, which calls `ISender.Send()`.
 4. MediatR behaviors run, then the handler applies Domain rules.
 5. Handler persists through `IApplicationDbContext` (implemented by `AppDbContext`).
@@ -34,8 +36,9 @@ All three server components run in Docker Compose.
 |---|---|
 | Logging | Serilog → stdout → `docker logs` |
 | Health | `/health` checks API + PostgreSQL |
-| Secrets | `.env` → env vars (`DB_PASSWORD`, `JWT_KEY`) |
-| Network | Only `web` is published; `api` and `db` stay on `hrm-net` |
+| Secrets | `.env` → env vars (`DB_PASSWORD`, `JWT_KEY`, `SEED_PASSWORD`) |
+| Network | Only `web` is published; `api` is internal, `db` only on localhost |
+| Security headers | Nginx: CSP (`script-src 'self'`), `X-Frame-Options: DENY`, `nosniff`, Referrer- and Permissions-Policy |
 | Tests | xUnit, Testcontainers (real PostgreSQL) |
 
 ## 2. Backend — Clean Architecture
@@ -86,8 +89,8 @@ HR Management System/
 │       └── HRM.API.IntegrationTests/ → API
 ├── hrm-client/                      (Angular 22 + Tailwind v4, see hrm-client/README.md)
 ├── docs/
-├── docker-compose.yml               (Day 1)
-├── .env.example                     (Day 1)
+├── docker-compose.yml               (db on Day 1; api + web on Day 10)
+├── .env.example
 └── README.md
 ```
 
@@ -113,34 +116,19 @@ All versions are pinned in `hrm-server/Directory.Packages.props`.
 
 DTO mapping is done manually with `.Select(...)` projections (no AutoMapper).
 
-### docker-compose.yml (outline)
+### Docker images and compose
 
-```yaml
-services:
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: hrm
-      POSTGRES_USER: hrm
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hrm"]
-      interval: 5s
-  api:
-    build: { context: ./hrm-server, dockerfile: src/HRM.API/Dockerfile }
-    environment:
-      ConnectionStrings__Default: Host=db;Database=hrm;Username=hrm;Password=${DB_PASSWORD}
-      Jwt__Key: ${JWT_KEY}
-    depends_on:
-      db: { condition: service_healthy }
-  web:
-    build: ./hrm-client            # multi-stage: node build → nginx
-    ports: ["8080:80"]
-    depends_on: [api]
-volumes:
-  pgdata:
-```
+The real file is [docker-compose.yml](../docker-compose.yml); the README has the quick start.
+
+| Service | Image | Notes |
+|---|---|---|
+| `db` | `postgres:17` | Named volume `pgdata`, `pg_isready` healthcheck |
+| `api` | `hrm-server/src/HRM.API/Dockerfile`: `dotnet/sdk:10.0` build → `dotnet/aspnet:10.0` runtime (~360 MB) | Runs as the non-root `app` user on :8080. Restore is a separate layer, cached until a `.csproj` changes. Env: connection string, `Jwt__Key`, `Database__MigrateOnStartup`, `Database__SeedDemoData`, `ReverseProxy__Enabled` |
+| `web` | `hrm-client/Dockerfile`: `node:24-alpine` build (`npm ci`, `ng build`) → `nginx:1.30-alpine` (~95 MB) | Config in `hrm-client/nginx/`. Hashed bundles cached for a year, `index.html` never; unknown paths fall back to `index.html`. Healthcheck calls `/health` through Nginx, so *healthy* means the whole chain works |
+
+Migrations and demo data run on startup only in Development, or when the two `Database__*` flags are on (the Docker demo). A real deployment runs migrations as a release step and never seeds.
+
+The production build sets `inlineCritical: false`: Angular's critical-CSS inlining loads the stylesheet with an inline script, which the CSP blocks.
 
 ### Local development
 

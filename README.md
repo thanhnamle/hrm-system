@@ -17,7 +17,34 @@ hrm-client/   Angular app (see hrm-client/README.md)
 docs/         plan, architecture, security, RBAC, draw.io diagrams
 ```
 
+## Quick start (Docker)
+
+Requirements: Docker Desktop. Runs the whole system: PostgreSQL, the API and Nginx serving the Angular app.
+
+1. Copy `.env.example` to `.env` and fill in `DB_PASSWORD`, `JWT_KEY` and `SEED_PASSWORD` (the file says how to generate the key).
+2. Build and start:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. Open http://localhost:8080 and sign in with a [demo account](#demo-accounts-development-seed) and your `SEED_PASSWORD`.
+
+On first start the API creates the schema and the demo company. `docker compose ps` shows `hrm-web` as *healthy* once the whole chain (Nginx → API → PostgreSQL) answers. Logs: `docker compose logs -f api`. Stop: `docker compose down` (add `-v` to delete the data too).
+
+| Container | Reachable at | Notes |
+|---|---|---|
+| `hrm-web` | http://localhost:8080 (`WEB_PORT`) | Nginx: the app at `/`, the API at `/api`, security headers |
+| `hrm-api` | not published | Only Nginx can reach it, on the internal Docker network |
+| `hrm-db` | `127.0.0.1:5432` (`DB_PORT`) | Localhost only, for development tools |
+
+If a port is already used on your machine (for example a local PostgreSQL on 5432), change `DB_PORT` or `WEB_PORT` in `.env`.
+
+This is a demo setup: plain HTTP, and demo accounts seeded on start. For production put TLS in front (and enable HSTS in [hrm-client/nginx/security-headers.conf](hrm-client/nginx/security-headers.conf)), run migrations as a release step and turn `Database__SeedDemoData` off.
+
 ## Getting started (backend)
+
+For development: the API with `dotnet run` and the client with `ng serve`, only PostgreSQL in Docker.
 
 Requirements: .NET 10 SDK, Docker Desktop.
 
@@ -70,7 +97,7 @@ Login is limited to 5 attempts per minute per IP, and 5 wrong passwords lock an 
 
 ### Testing with Postman
 
-Import both files from [postman/](postman/): `HRM.postman_collection.json` and `HRM.local.postman_environment.json`. Select the **HRM Local** environment, set `password` to your `Seed:DefaultPassword`, start the API, then run the collection (Collection Runner) or send requests one by one starting with **00 Setup**. It covers every endpoint for every role, including the 403/404 cases. Folders 00–06 use five logins, so wait a minute before **07 Logout** and **08 Users** (rate limit). **08 Users** creates its own employee and account, so your demo logins never change.
+Import from [postman/](postman/) the collection `HRM.postman_collection.json` and an environment: `HRM.local.postman_environment.json` (**HRM Local**, the API on port 5183) or `HRM.docker.postman_environment.json` (**HRM Docker**, through Nginx on port 8080). Set `password` in the environment to your `Seed:DefaultPassword` (or `SEED_PASSWORD` for Docker), start the API, then run the collection (Collection Runner) or send requests one by one starting with **00 Setup**. It covers every endpoint for every role, including the 403/404 cases. Folders 00–06 use five logins, so wait a minute before **07 Logout** and **08 Users** (rate limit). **08 Users** and **09 Profile** create their own employees, so your demo data never changes.
 
 To start over with fresh demo data, drop the database volume: `docker compose down -v` then `docker compose up -d db` (the API re-seeds on its next start).
 
