@@ -67,6 +67,11 @@
 }
 @utility input {
   @apply block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none aria-invalid:border-danger;
+  /* Angular adds ng-invalid/ng-touched to reactive form controls, so every form gets this for free.
+     Inside the utility (not @layer components) so it wins over the border colour above. */
+  &.ng-invalid.ng-touched {
+    @apply border-danger;
+  }
 }
 @utility field-error {
   @apply mt-1 text-sm text-danger;
@@ -77,11 +82,6 @@
 }
 
 @layer components {
-  /* Angular adds ng-invalid/ng-touched to reactive form controls, so every form gets this for free. */
-  .input.ng-invalid.ng-touched {
-    @apply border-danger;
-  }
-
   /* <div class="table-wrap"><table class="data-table">… — scrolls sideways on narrow screens. */
   .table-wrap {
     @apply overflow-x-auto rounded-lg border border-border bg-surface;
