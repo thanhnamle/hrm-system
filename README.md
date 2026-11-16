@@ -30,7 +30,7 @@ Requirements: Docker Desktop. Runs the whole system: PostgreSQL, the API and Ngi
 
 3. Open http://localhost:8080 and sign in with a [demo account](#demo-accounts-development-seed) and your `SEED_PASSWORD`.
 
-On first start the API creates the schema and the demo company. `docker compose ps` shows `hrm-web` as *healthy* once the whole chain (Nginx → API → PostgreSQL) answers. Logs: `docker compose logs -f api`. Stop: `docker compose down` (add `-v` to delete the data too).
+On first start the API creates the schema and the demo company. Seeding only runs on an empty database: if you already used `docker compose up -d db` for development, the stack reuses that data and the demo accounts keep the password they were created with (your `Seed:DefaultPassword`), whatever `SEED_PASSWORD` says. `docker compose ps` shows `hrm-web` as *healthy* once the whole chain (Nginx → API → PostgreSQL) answers. Logs: `docker compose logs -f api`. Stop: `docker compose down` (add `-v` to delete the data too).
 
 | Container | Reachable at | Notes |
 |---|---|---|
