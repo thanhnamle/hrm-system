@@ -1,2 +1,177 @@
-<h1 class="text-2xl font-semibold">My leave</h1>
-<p class="mt-2 text-muted">Requests and the request form arrive in Phase 8.</p>
+<app-page-header title="My leave" description="Your balance and leave requests.">
+  <button type="button" class="btn-primary" (click)="openForm()">Request leave</button>
+</app-page-header>
+
+<!-- Balance -->
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+  @let b = balance.hasValue() ? balance.value() : null;
+  <div class="card p-5">
+    <p class="text-sm text-muted">Available annual leave</p>
+    <p class="mt-1 text-3xl font-semibold">{{ b ? (b.available | number: '1.0-1') : '–' }}</p>
+    <p class="text-xs text-muted">days you can still request</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-sm text-muted">Annual balance</p>
+    <p class="mt-1 text-3xl font-semibold">
+      {{ b ? (b.annualLeaveBalance | number: '1.0-1') : '–' }}
+    </p>
+    <p class="text-xs text-muted">after approved leave</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-sm text-muted">Waiting for approval</p>
+    <p class="mt-1 text-3xl font-semibold">
+      {{ b ? (b.pendingAnnualDays | number: '1.0-1') : '–' }}
+    </p>
+    <p class="text-xs text-muted">annual days pending</p>
+  </div>
+</div>
+
+<div class="mb-4 flex items-center justify-between gap-3">
+  <h2 class="font-semibold">Requests</h2>
+  <div class="w-44">
+    <label class="sr-only" for="status">Status</label>
+    <select id="status" class="input" (change)="status.set($any($event.target).value)">
+      <option value="" [selected]="status() === ''">All statuses</option>
+      @for (s of ['Pending', 'Approved', 'Rejected', 'Cancelled']; track s) {
+        <option [value]="s" [selected]="status() === s">{{ s }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+<div class="table-wrap">
+  @if (requests.hasValue()) {
+    @let result = requests.value();
+    @if (result.items.length) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Dates</th>
+            <th scope="col" class="text-right">Days</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of result.items; track r.id) {
+            <tr>
+              <td>{{ r.type }}</td>
+              <td class="whitespace-nowrap">
+                {{ r.startDate | date: 'mediumDate' }}
+                @if (r.endDate !== r.startDate) {
+                  – {{ r.endDate | date: 'mediumDate' }}
+                }
+              </td>
+              <td class="text-right">{{ r.days | number: '1.0-1' }}</td>
+              <td class="max-w-xs">
+                <div class="truncate" [title]="r.reason">{{ r.reason }}</div>
+                @if (r.reviewedByName) {
+                  <div class="text-xs text-muted">
+                    {{ r.status === 'Approved' ? 'Approved' : 'Reviewed' }} by
+                    {{ r.reviewedByName }}
+                    @if (r.reviewNote) {
+                      – “{{ r.reviewNote }}”
+                    }
+                  </div>
+                }
+              </td>
+              <td><app-badge [status]="r.status" /></td>
+              <td class="text-right">
+                @if (r.status === 'Pending') {
+                  <button type="button" class="btn-ghost px-2 py-1 text-danger" (click)="cancel(r)">
+                    Cancel
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <app-pagination
+        [page]="result.page"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else {
+      <app-empty-state title="No leave requests" message="Requests you submit appear here.">
+        <button type="button" class="btn-secondary" (click)="openForm()">Request leave</button>
+      </app-empty-state>
+    }
+  } @else if (requests.isLoading()) {
+    <app-loading label="Loading requests…" />
+  } @else if (requests.error()) {
+    <app-empty-state title="Requests could not be loaded">
+      <button type="button" class="btn-secondary" (click)="requests.reload()">Try again</button>
+    </app-empty-state>
+  }
+</div>
+
+<app-modal title="Request leave" [open]="formOpen()" (closed)="formOpen.set(false)">
+  <form id="leave-form" class="space-y-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (formErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of formErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+    <app-form-field label="Type" for="type" [control]="form.controls.type" required>
+      <select id="type" class="input" formControlName="type">
+        <option value="Annual">Annual (uses your balance)</option>
+        <option value="Sick">Sick</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+    </app-form-field>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <app-form-field label="From" for="startDate" [control]="form.controls.startDate" required>
+        <input
+          id="startDate"
+          class="input"
+          type="date"
+          formControlName="startDate"
+          aria-describedby="startDate-error"
+        />
+      </app-form-field>
+      <app-form-field label="To" for="endDate" [control]="form.controls.endDate" required>
+        <input
+          id="endDate"
+          class="input"
+          type="date"
+          formControlName="endDate"
+          aria-describedby="endDate-error"
+        />
+      </app-form-field>
+    </div>
+    @if (days() !== null) {
+      <p class="text-sm" [class.text-danger]="exceedsBalance()" aria-live="polite">
+        {{ days() }} working day(s), Monday to Friday.
+        @if (exceedsBalance()) {
+          That's more than your {{ balance.value()?.available }} available annual day(s).
+        }
+      </p>
+    }
+    <app-form-field label="Reason" for="reason" [control]="form.controls.reason" required>
+      <textarea
+        id="reason"
+        class="input"
+        rows="3"
+        formControlName="reason"
+        aria-describedby="reason-error"
+      ></textarea>
+    </app-form-field>
+  </form>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="formOpen.set(false)">Cancel</button>
+    <button
+      type="submit"
+      form="leave-form"
+      class="btn-primary"
+      [disabled]="saving() || exceedsBalance()"
+    >
+      {{ saving() ? 'Submitting…' : 'Submit request' }}
+    </button>
+  </div>
+</app-modal>

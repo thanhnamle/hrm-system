@@ -1,2 +1,239 @@
-<h1 class="text-2xl font-semibold">Approvals</h1>
-<p class="mt-2 text-muted">The approvals inbox arrives in Phase 8.</p>
+<app-page-header title="Leave approvals" description="Review your team's leave requests." />
+
+@if (!canReview()) {
+  <p class="mb-4 rounded-md bg-warning/15 px-4 py-3 text-sm" role="note">
+    Your account isn't linked to an employee record, so you can see requests but not approve or
+    reject them. Ask HR to review.
+  </p>
+}
+
+@if (canViewAll()) {
+  <div class="mb-4 flex gap-1 border-b border-border" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="-mb-px border-b-2 px-4 py-2 text-sm font-medium"
+      [class.border-brand-600]="tab() === 'pending'"
+      [class.text-brand-700]="tab() === 'pending'"
+      [class.border-transparent]="tab() !== 'pending'"
+      [attr.aria-selected]="tab() === 'pending'"
+      (click)="tab.set('pending')"
+    >
+      Waiting for review
+      @if (pending.hasValue()) {
+        <span class="ml-1 rounded-full bg-canvas px-2 text-xs">{{
+          pending.value().totalCount
+        }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="-mb-px border-b-2 px-4 py-2 text-sm font-medium"
+      [class.border-brand-600]="tab() === 'all'"
+      [class.text-brand-700]="tab() === 'all'"
+      [class.border-transparent]="tab() !== 'all'"
+      [attr.aria-selected]="tab() === 'all'"
+      (click)="tab.set('all')"
+    >
+      All requests
+    </button>
+  </div>
+}
+
+@if (tab() === 'pending') {
+  <div class="table-wrap">
+    @if (pending.hasValue()) {
+      @let result = pending.value();
+      @if (result.items.length) {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Employee</th>
+              <th scope="col">Type</th>
+              <th scope="col">Dates</th>
+              <th scope="col" class="text-right">Days</th>
+              <th scope="col">Reason</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of result.items; track r.id) {
+              <tr>
+                <td>
+                  <div class="font-medium">{{ r.employeeName }}</div>
+                  <div class="text-xs text-muted">{{ r.departmentName }}</div>
+                </td>
+                <td>{{ r.type }}</td>
+                <td class="whitespace-nowrap">
+                  {{ r.startDate | date: 'mediumDate' }}
+                  @if (r.endDate !== r.startDate) {
+                    – {{ r.endDate | date: 'mediumDate' }}
+                  }
+                </td>
+                <td class="text-right">{{ r.days | number: '1.0-1' }}</td>
+                <td class="max-w-xs">
+                  <div class="truncate" [title]="r.reason">{{ r.reason }}</div>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  @if (canReview()) {
+                    <button
+                      type="button"
+                      class="btn-ghost px-2 py-1 text-success"
+                      (click)="open(r, 'approve')"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-ghost px-2 py-1 text-danger"
+                      (click)="open(r, 'reject')"
+                    >
+                      Reject
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="result.pageSize"
+          [totalCount]="result.totalCount"
+          (pageChange)="pendingPage.set($event)"
+        />
+      } @else {
+        <app-empty-state
+          title="Nothing to review"
+          message="New requests from your team will appear here."
+        />
+      }
+    } @else if (pending.isLoading()) {
+      <app-loading label="Loading requests…" />
+    } @else if (pending.error()) {
+      <app-empty-state title="Requests could not be loaded">
+        <button type="button" class="btn-secondary" (click)="pending.reload()">Try again</button>
+      </app-empty-state>
+    }
+  </div>
+} @else {
+  <div class="mb-4 flex flex-wrap gap-3">
+    <div class="w-44">
+      <label class="sr-only" for="all-status">Status</label>
+      <select id="all-status" class="input" (change)="allStatus.set($any($event.target).value)">
+        <option value="" [selected]="allStatus() === ''">All statuses</option>
+        @for (s of ['Pending', 'Approved', 'Rejected', 'Cancelled']; track s) {
+          <option [value]="s" [selected]="allStatus() === s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="w-52">
+      <label class="sr-only" for="all-department">Department</label>
+      <select
+        id="all-department"
+        class="input"
+        (change)="allDepartment.set($any($event.target).value)"
+      >
+        <option value="" [selected]="allDepartment() === ''">All departments</option>
+        @for (d of departments.hasValue() ? departments.value() : []; track d.id) {
+          <option [value]="d.id" [selected]="allDepartment() === d.id">{{ d.name }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="table-wrap">
+    @if (all.hasValue()) {
+      @let result = all.value()!;
+      @if (result.items.length) {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Employee</th>
+              <th scope="col">Type</th>
+              <th scope="col">Dates</th>
+              <th scope="col" class="text-right">Days</th>
+              <th scope="col">Status</th>
+              <th scope="col">Reviewed by</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of result.items; track r.id) {
+              <tr>
+                <td>
+                  <div class="font-medium">{{ r.employeeName }}</div>
+                  <div class="text-xs text-muted">{{ r.departmentName }}</div>
+                </td>
+                <td>{{ r.type }}</td>
+                <td class="whitespace-nowrap">
+                  {{ r.startDate | date: 'mediumDate' }}
+                  @if (r.endDate !== r.startDate) {
+                    – {{ r.endDate | date: 'mediumDate' }}
+                  }
+                </td>
+                <td class="text-right">{{ r.days | number: '1.0-1' }}</td>
+                <td><app-badge [status]="r.status" /></td>
+                <td class="text-sm">
+                  {{ r.reviewedByName ?? '—' }}
+                  @if (r.reviewNote) {
+                    <div class="text-xs text-muted">“{{ r.reviewNote }}”</div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="result.pageSize"
+          [totalCount]="result.totalCount"
+          (pageChange)="allPage.set($event)"
+        />
+      } @else {
+        <app-empty-state title="No requests match" />
+      }
+    } @else if (all.isLoading()) {
+      <app-loading label="Loading requests…" />
+    }
+  </div>
+}
+
+<app-modal
+  [title]="(reviewing()?.action === 'approve' ? 'Approve' : 'Reject') + ' leave request'"
+  [open]="reviewing() !== null"
+  (closed)="reviewing.set(null)"
+>
+  @if (reviewing(); as review) {
+    <p class="mb-4 text-sm">
+      <span class="font-medium">{{ review.request.employeeName }}</span> ·
+      {{ review.request.type }} · {{ review.request.days | number: '1.0-1' }} day(s) from
+      {{ review.request.startDate | date: 'mediumDate' }}
+    </p>
+    <app-form-field
+      [label]="review.action === 'approve' ? 'Note (optional)' : 'Reason for rejecting'"
+      for="review-note"
+      [control]="note"
+      [required]="review.action === 'reject'"
+      hint="The employee sees this note."
+    >
+      <textarea
+        id="review-note"
+        class="input"
+        rows="3"
+        [formControl]="note"
+        aria-describedby="review-note-error"
+      ></textarea>
+    </app-form-field>
+  }
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="reviewing.set(null)">Cancel</button>
+    <button
+      type="button"
+      [class]="reviewing()?.action === 'approve' ? 'btn-primary' : 'btn-danger'"
+      [disabled]="saving()"
+      (click)="confirmReview()"
+    >
+      {{ saving() ? 'Saving…' : reviewing()?.action === 'approve' ? 'Approve' : 'Reject' }}
+    </button>
+  </div>
+</app-modal>
