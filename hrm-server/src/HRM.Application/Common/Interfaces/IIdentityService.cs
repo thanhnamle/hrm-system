@@ -19,6 +19,9 @@ public interface IIdentityService
 
     Task<Guid?> FindUserIdByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
 
+    /// <summary>The employee's login account, or null if they have none yet.</summary>
+    Task<AccountSummary?> GetAccountByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Points the employee's login (if any) at a new email. The change is only tracked: it is saved
     /// together with the employee by the caller's SaveChangesAsync, so both succeed or neither does.
@@ -47,3 +50,5 @@ public interface IIdentityService
 
 /// <summary>An account that is allowed to sign in. One role per user.</summary>
 public sealed record AuthUser(Guid Id, string Email, string Role, Guid? EmployeeId, string? FullName);
+
+public sealed record AccountSummary(Guid UserId, string Role, bool IsLockedOut);

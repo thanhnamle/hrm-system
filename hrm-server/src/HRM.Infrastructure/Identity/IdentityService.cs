@@ -56,6 +56,18 @@ public sealed class IdentityService(
     public Task<Guid?> FindUserIdByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default) =>
         db.Users.Where(u => u.EmployeeId == employeeId).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<AccountSummary?> GetAccountByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        return await (
+                from user in db.Users.AsNoTracking()
+                where user.EmployeeId == employeeId
+                join userRole in db.UserRoles on user.Id equals userRole.UserId
+                join role in db.Roles on userRole.RoleId equals role.Id
+                select new AccountSummary(user.Id, role.Name!, user.LockoutEnd != null && user.LockoutEnd > now))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task UpdateLoginEmailAsync(Guid employeeId, string email, CancellationToken cancellationToken = default)
     {
         var user = await db.Users.SingleOrDefaultAsync(u => u.EmployeeId == employeeId, cancellationToken);
