@@ -1,0 +1,28 @@
+<!-- role="status" + aria-live: screen readers announce new messages without moving focus. -->
+<div class="fixed right-4 bottom-4 z-50 flex w-80 flex-col gap-2" role="status" aria-live="polite">
+  @for (item of toast.toasts(); track item.id) {
+    <div
+      class="flex items-start gap-3 rounded-md border bg-surface p-3 text-sm shadow-lg"
+      [class.border-danger]="item.kind === 'error'"
+      [class.border-success]="item.kind === 'success'"
+      [class.border-border]="item.kind === 'info'"
+    >
+      <span
+        class="mt-1.5 size-2 shrink-0 rounded-full"
+        [class.bg-danger]="item.kind === 'error'"
+        [class.bg-success]="item.kind === 'success'"
+        [class.bg-brand-500]="item.kind === 'info'"
+        aria-hidden="true"
+      ></span>
+      <p class="flex-1 text-ink">{{ item.message }}</p>
+      <button
+        type="button"
+        class="text-muted hover:text-ink"
+        (click)="toast.dismiss(item.id)"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+    </div>
+  }
+</div>

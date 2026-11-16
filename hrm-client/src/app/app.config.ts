@@ -1,14 +1,24 @@
-import { provideHttpClient } from '@angular/common/http';
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
+import { authInterceptor, refreshInterceptor } from './core/auth/auth.interceptor';
+import { AuthService } from './core/auth/auth.service';
+import { errorInterceptor } from './core/http/error.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // Route params (e.g. /employees/:id) arrive as component inputs.
+    // Route params and query params (e.g. ?returnUrl=) arrive as component inputs.
     provideRouter(routes, withComponentInputBinding()),
-    // Interceptors (auth, refresh, errors) are added here with the AuthService.
-    provideHttpClient(),
+    // Order matters: a request passes these top to bottom, the response bottom to top.
+    provideHttpClient(withInterceptors([authInterceptor, refreshInterceptor, errorInterceptor])),
+    // Before the first route is resolved: use the refresh cookie to restore the session after a reload.
+    provideAppInitializer(() => inject(AuthService).restoreSession()),
   ],
 };
