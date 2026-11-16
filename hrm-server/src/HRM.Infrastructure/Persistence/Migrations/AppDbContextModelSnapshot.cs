@@ -202,6 +202,13 @@ namespace HRM.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("position");
 
+                    b.PrimitiveCollection<string[]>("Skills")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("skills")
+                        .HasDefaultValueSql("'{}'");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -234,6 +241,127 @@ namespace HRM.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_employees_leave_balance", "annual_leave_balance >= 0");
                         });
+                });
+
+            modelBuilder.Entity("HRM.Domain.Entities.EmployeeDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("SizeBytes")
+                        .HasColumnType("integer")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_employee_documents");
+
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_employee_documents_employee_id");
+
+                    b.ToTable("employee_documents", (string)null);
+                });
+
+            modelBuilder.Entity("HRM.Domain.Entities.JobHistoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("change_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("department_id");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("position");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_job_history");
+
+                    b.HasIndex("DepartmentId")
+                        .HasDatabaseName("ix_job_history_department_id");
+
+                    b.HasIndex("EmployeeId", "EffectiveDate")
+                        .HasDatabaseName("ix_job_history_employee_id_effective_date");
+
+                    b.ToTable("job_history", (string)null);
                 });
 
             modelBuilder.Entity("HRM.Domain.Entities.LeaveRequest", b =>
@@ -328,6 +456,75 @@ namespace HRM.Infrastructure.Persistence.Migrations
                     b.ToTable("leave_requests", null, t =>
                         {
                             t.HasCheckConstraint("ck_leave_requests_dates", "end_date >= start_date");
+                        });
+                });
+
+            modelBuilder.Entity("HRM.Domain.Entities.Qualification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<string>("Organization")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("organization");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_qualifications");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_qualifications_employee_id");
+
+                    b.ToTable("qualifications", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_qualifications_dates", "end_date IS NULL OR start_date IS NULL OR end_date >= start_date");
                         });
                 });
 
@@ -675,6 +872,33 @@ namespace HRM.Infrastructure.Persistence.Migrations
                     b.Navigation("Department");
                 });
 
+            modelBuilder.Entity("HRM.Domain.Entities.EmployeeDocument", b =>
+                {
+                    b.HasOne("HRM.Domain.Entities.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_employee_documents_employees_employee_id");
+                });
+
+            modelBuilder.Entity("HRM.Domain.Entities.JobHistoryEntry", b =>
+                {
+                    b.HasOne("HRM.Domain.Entities.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_job_history_departments_department_id");
+
+                    b.HasOne("HRM.Domain.Entities.Employee", null)
+                        .WithMany("JobHistory")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_job_history_employees_employee_id");
+                });
+
             modelBuilder.Entity("HRM.Domain.Entities.LeaveRequest", b =>
                 {
                     b.HasOne("HRM.Domain.Entities.Employee", "Employee")
@@ -691,6 +915,16 @@ namespace HRM.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_leave_requests_employees_reviewed_by_id");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("HRM.Domain.Entities.Qualification", b =>
+                {
+                    b.HasOne("HRM.Domain.Entities.Employee", null)
+                        .WithMany("Qualifications")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_qualifications_employees_employee_id");
                 });
 
             modelBuilder.Entity("HRM.Infrastructure.Identity.AppUser", b =>
@@ -778,7 +1012,11 @@ namespace HRM.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("HRM.Domain.Entities.Employee", b =>
                 {
+                    b.Navigation("JobHistory");
+
                     b.Navigation("LeaveRequests");
+
+                    b.Navigation("Qualifications");
                 });
 #pragma warning restore 612, 618
         }

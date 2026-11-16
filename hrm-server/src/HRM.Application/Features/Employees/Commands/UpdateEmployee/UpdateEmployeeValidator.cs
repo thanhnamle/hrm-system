@@ -12,5 +12,6 @@ public sealed class UpdateEmployeeValidator : AbstractValidator<UpdateEmployeeCo
         RuleFor(x => x.Position).NotEmpty().MaximumLength(100);
         RuleFor(x => x.DepartmentId).NotEmpty();
         RuleFor(x => x.Phone).PhoneRules();
+        RuleFor(x => x.ChangeNote).MaximumLength(500);
     }
 }

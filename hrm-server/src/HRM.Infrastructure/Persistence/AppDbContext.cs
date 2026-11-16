@@ -13,6 +13,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<JobHistoryEntry> JobHistory => Set<JobHistoryEntry>();
+    public DbSet<Qualification> Qualifications => Set<Qualification>();
+    public DbSet<EmployeeDocument> EmployeeDocuments => Set<EmployeeDocument>();
 
     // Auth only; not exposed to the Application layer through IApplicationDbContext.
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

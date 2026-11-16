@@ -40,10 +40,10 @@ public class EmployeeTests
     public void Terminate_twice_throws()
     {
         var employee = NewEmployee();
-        employee.Terminate();
+        employee.Terminate(Monday);
 
         employee.Status.ShouldBe(EmployeeStatus.Terminated);
-        Should.Throw<DomainException>(employee.Terminate);
+        Should.Throw<DomainException>(() => employee.Terminate(Monday));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class EmployeeTests
         approved.Approve(Guid.CreateVersion7(), Now);
         var pending = employee.RequestLeave(LeaveType.Annual, Friday, Friday, "Later", Monday);
 
-        employee.Terminate();
+        employee.Terminate(Monday);
 
         pending.Status.ShouldBe(LeaveStatus.Cancelled);
         approved.Status.ShouldBe(LeaveStatus.Approved);
@@ -64,9 +64,9 @@ public class EmployeeTests
     public void Terminated_employee_cannot_be_updated()
     {
         var employee = NewEmployee();
-        employee.Terminate();
+        employee.Terminate(Monday);
 
-        Should.Throw<DomainException>(() => employee.UpdateDetails("A", "B", "Dev", null, null));
+        Should.Throw<DomainException>(() => employee.UpdateDetails("A", "B", null, null));
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class EmployeeTests
     public void Terminated_employee_cannot_request_leave()
     {
         var employee = NewEmployee();
-        employee.Terminate();
+        employee.Terminate(Monday);
 
         Should.Throw<DomainException>(() =>
             employee.RequestLeave(LeaveType.Annual, Monday, Monday, "Leave", Monday));

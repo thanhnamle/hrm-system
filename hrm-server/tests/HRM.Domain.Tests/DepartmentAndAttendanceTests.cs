@@ -29,7 +29,7 @@ public class DepartmentTests
     {
         var department = Department.Create("ENG", "Engineering");
         var manager = NewEmployee(departmentId: department.Id);
-        manager.Terminate();
+        manager.Terminate(Monday);
 
         Should.Throw<DomainException>(() => department.AssignManager(manager));
     }
@@ -80,7 +80,7 @@ public class AttendanceRecordTests
     public void Terminated_employee_cannot_check_in()
     {
         var employee = NewEmployee();
-        employee.Terminate();
+        employee.Terminate(Monday);
 
         Should.Throw<DomainException>(() => AttendanceRecord.CheckIn(employee, Monday, Now));
     }

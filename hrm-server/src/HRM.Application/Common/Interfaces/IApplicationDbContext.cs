@@ -12,6 +12,9 @@ public interface IApplicationDbContext
     DbSet<Department> Departments { get; }
     DbSet<LeaveRequest> LeaveRequests { get; }
     DbSet<AttendanceRecord> AttendanceRecords { get; }
+    DbSet<JobHistoryEntry> JobHistory { get; }
+    DbSet<Qualification> Qualifications { get; }
+    DbSet<EmployeeDocument> EmployeeDocuments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

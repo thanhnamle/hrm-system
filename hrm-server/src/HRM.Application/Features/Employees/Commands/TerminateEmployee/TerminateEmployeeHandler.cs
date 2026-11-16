@@ -9,14 +9,15 @@ using Microsoft.EntityFrameworkCore;
 namespace HRM.Application.Features.Employees.Commands.TerminateEmployee;
 
 /// <summary>
-/// Soft delete. Pending leave is cancelled, any department they manage loses its manager,
+/// Soft delete, recorded in the job history. Pending leave is cancelled, any department they manage loses its manager,
 /// and every session of their account is revoked so they are signed out immediately.
 /// </summary>
 public sealed class TerminateEmployeeHandler(
     IApplicationDbContext db,
     ICurrentUser currentUser,
     IIdentityService identityService,
-    IRefreshTokenService refreshTokenService)
+    IRefreshTokenService refreshTokenService,
+    IClock clock)
     : IRequestHandler<TerminateEmployeeCommand>
 {
     public async Task Handle(TerminateEmployeeCommand request, CancellationToken cancellationToken)
@@ -29,7 +30,7 @@ public sealed class TerminateEmployeeHandler(
                 .SingleOrDefaultAsync(e => e.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(Employee), request.Id);
 
-        employee.Terminate();
+        employee.Terminate(clock.Today, request.Note);
 
         var managed = await db.Departments.Where(d => d.ManagerId == employee.Id).ToListAsync(cancellationToken);
         managed.ForEach(d => d.RemoveManager());
