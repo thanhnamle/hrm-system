@@ -67,7 +67,12 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | GET | `/api/employees?search=&departmentId=&status=&page=&pageSize=` | `Employees.View` | role scope |
 | GET | `/api/employees/{id}` | `Employees.View` | role scope |
 | POST / PUT | `/api/employees`, `/api/employees/{id}` | `Employees.Create` / `Employees.Update` | |
-| POST | `/api/employees/{id}/terminate` | `Employees.Terminate` | |
+| POST | `/api/employees/{id}/terminate` (optional `{ note }`) | `Employees.Terminate` | recorded in job history |
+| GET | `/api/employees/{id}/profile` | `Employees.View` | role scope: account role, job history, skills, qualifications, CV info |
+| PUT | `/api/employees/{id}/skills` | `Employees.Update` | |
+| POST / PUT / DELETE | `/api/employees/{id}/qualifications[/{qualificationId}]` | `Employees.Update` | education, certificates, previous jobs |
+| PUT / DELETE | `/api/employees/{id}/cv` (multipart `file`, PDF ≤ 5 MB) | `Employees.Update` | bytes checked (`%PDF-`), replaces the current CV |
+| GET | `/api/employees/{id}/cv` | `Employees.View` | role scope; `attachment` + `nosniff` |
 | GET | `/api/departments` | `Departments.View` | |
 | POST / PUT / DELETE | `/api/departments`, `/api/departments/{id}` | `Departments.Manage` | |
 | PUT / DELETE | `/api/departments/{id}/manager` | `Departments.Manage` | manager must belong to the department |
@@ -85,6 +90,10 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | PUT | `/api/users/{id}/role` | `Users.Manage` | not your own; revokes the user's sessions |
 | POST | `/api/users/{id}/lock`, `/unlock`, `/reset-password` | `Users.Manage` | cannot lock yourself; lock and reset revoke sessions |
 | GET | `/api/dashboard` | Authenticated | role-dependent content |
+
+**Employee profile**
+- **Job history** is written by the `Employee` aggregate itself: `Hire` adds *Hired*, `ChangeJob` adds *Transferred* (new department) or *PositionChanged* (same department, new position), `Terminate` adds *Terminated*. `PUT /api/employees/{id}` takes an optional `changeNote` (e.g. "Promotion") that is stored on the entry. Nothing is recorded when the job doesn't change.
+- **CV file** is its own aggregate (`EmployeeDocument`, table `employee_documents`, `bytea`), so loading an employee never loads file content. One CV per employee.
 
 **Conventions**
 - Lists return `{ items, page, pageSize, totalCount, totalPages }`; `pageSize` is 1–100.
