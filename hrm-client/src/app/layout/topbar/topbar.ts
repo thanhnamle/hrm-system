@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
-  imports: [],
   selector: 'app-topbar',
   templateUrl: './topbar.html',
 })
-export class Topbar {}
+export class Topbar {
+  protected readonly auth = inject(AuthService);
+}
