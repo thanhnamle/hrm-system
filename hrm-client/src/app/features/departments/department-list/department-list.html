@@ -1,2 +1,179 @@
-<h1 class="text-2xl font-semibold">Departments</h1>
-<p class="mt-2 text-muted">Department management arrives in Phase 7.</p>
+<app-page-header title="Departments" description="Teams, their managers and headcount.">
+  <button
+    *appHasPermission="Permissions.DepartmentsManage"
+    type="button"
+    class="btn-primary"
+    (click)="openCreate()"
+  >
+    Add department
+  </button>
+</app-page-header>
+
+<div class="table-wrap">
+  @if (departments.isLoading() && !departments.value().length) {
+    <app-loading label="Loading departments…" />
+  } @else if (departments.error()) {
+    <app-empty-state title="Departments could not be loaded">
+      <button type="button" class="btn-secondary" (click)="departments.reload()">Try again</button>
+    </app-empty-state>
+  } @else if (!departments.value().length) {
+    <app-empty-state title="No departments yet" />
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Name</th>
+          <th scope="col">Manager</th>
+          <th scope="col" class="text-right">Employees</th>
+          @if (canManage()) {
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of departments.value(); track d.id) {
+          <tr>
+            <td class="font-mono text-xs whitespace-nowrap text-muted">{{ d.code }}</td>
+            <td>
+              <div class="font-medium">{{ d.name }}</div>
+              @if (d.description) {
+                <div class="text-xs text-muted">{{ d.description }}</div>
+              }
+            </td>
+            <td class="whitespace-nowrap">
+              @if (d.managerName) {
+                {{ d.managerName }}
+              } @else {
+                <span class="text-muted">No manager</span>
+              }
+            </td>
+            <td class="text-right">
+              @if (canViewEmployees()) {
+                <a
+                  routerLink="/employees"
+                  [queryParams]="{ departmentId: d.id }"
+                  class="text-brand-700 hover:underline"
+                  [attr.aria-label]="'View the ' + d.employeeCount + ' employees of ' + d.name"
+                  >{{ d.employeeCount }}</a
+                >
+              } @else {
+                {{ d.employeeCount }}
+              }
+            </td>
+            @if (canManage()) {
+              <td class="text-right whitespace-nowrap">
+                <button type="button" class="btn-ghost px-2 py-1" (click)="openEdit(d)">
+                  Edit
+                </button>
+                <button type="button" class="btn-ghost px-2 py-1" (click)="openManager(d)">
+                  Manager
+                </button>
+                <button type="button" class="btn-ghost px-2 py-1 text-danger" (click)="remove(d)">
+                  Delete
+                </button>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+<app-modal
+  [title]="editing() === 'new' ? 'Add department' : 'Edit department'"
+  [open]="editing() !== null"
+  (closed)="editing.set(null)"
+>
+  <form id="department-form" class="space-y-4" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (formErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of formErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+    <app-form-field
+      label="Code"
+      for="code"
+      [control]="form.controls.code"
+      required
+      [hint]="
+        editing() === 'new'
+          ? 'Letters, digits, - and _. Cannot be changed later.'
+          : 'Cannot be changed.'
+      "
+    >
+      <input
+        id="code"
+        class="input uppercase"
+        formControlName="code"
+        aria-describedby="code-error"
+      />
+    </app-form-field>
+    <app-form-field label="Name" for="name" [control]="form.controls.name" required>
+      <input id="name" class="input" formControlName="name" aria-describedby="name-error" />
+    </app-form-field>
+    <app-form-field label="Description" for="description" [control]="form.controls.description">
+      <textarea
+        id="description"
+        class="input"
+        rows="3"
+        formControlName="description"
+        aria-describedby="description-error"
+      ></textarea>
+    </app-form-field>
+  </form>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="editing.set(null)">Cancel</button>
+    <button type="submit" form="department-form" class="btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </div>
+</app-modal>
+
+<app-modal
+  [title]="'Manager of ' + (managing()?.name ?? '')"
+  [open]="managing() !== null"
+  (closed)="managing.set(null)"
+>
+  <app-form-field
+    label="Manager"
+    for="managerId"
+    [control]="managerId"
+    required
+    hint="Only active members of the department can manage it. Their account also needs the Manager role to approve leave."
+  >
+    <select
+      id="managerId"
+      class="input"
+      [formControl]="managerId"
+      aria-describedby="managerId-error"
+    >
+      <option value="" disabled>Choose an employee</option>
+      @if (members.hasValue()) {
+        @for (m of members.value().items; track m.id) {
+          <option [value]="m.id">{{ m.fullName }} · {{ m.position }}</option>
+        }
+      }
+    </select>
+  </app-form-field>
+  @if (members.isLoading()) {
+    <p class="mt-2 text-sm text-muted">Loading members…</p>
+  }
+  <div modal-actions class="flex w-full justify-between gap-2">
+    @let current = managing();
+    <div>
+      @if (current?.managerId) {
+        <button type="button" class="btn-ghost text-danger" (click)="removeManager(current!)">
+          Remove manager
+        </button>
+      }
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="btn-secondary" (click)="managing.set(null)">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveManager()">Save</button>
+    </div>
+  </div>
+</app-modal>
