@@ -1,0 +1,136 @@
+<a [routerLink]="backLink()" class="mb-4 inline-block text-sm text-muted hover:text-ink">
+  ← {{ isEdit() ? 'Back to employee' : 'Employees' }}
+</a>
+
+<app-page-header
+  [title]="isEdit() ? 'Edit employee' : 'Add employee'"
+  [description]="
+    isEdit() ? '' : 'The employee code is generated. Create a login for them under Users.'
+  "
+/>
+
+@if (isEdit() && employee.isLoading()) {
+  <app-loading label="Loading employee…" />
+} @else {
+  <form class="card max-w-3xl space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (formErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of formErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      <app-form-field
+        label="First name"
+        for="firstName"
+        [control]="form.controls.firstName"
+        required
+      >
+        <input
+          id="firstName"
+          class="input"
+          formControlName="firstName"
+          autocomplete="given-name"
+          aria-describedby="firstName-error"
+        />
+      </app-form-field>
+      <app-form-field label="Last name" for="lastName" [control]="form.controls.lastName" required>
+        <input
+          id="lastName"
+          class="input"
+          formControlName="lastName"
+          autocomplete="family-name"
+          aria-describedby="lastName-error"
+        />
+      </app-form-field>
+
+      <app-form-field
+        label="Email"
+        for="email"
+        [control]="form.controls.email"
+        required
+        [hint]="isEdit() ? 'Changing it also changes their login email.' : ''"
+      >
+        <input
+          id="email"
+          class="input"
+          type="email"
+          formControlName="email"
+          aria-describedby="email-error"
+        />
+      </app-form-field>
+      <app-form-field label="Phone" for="phone" [control]="form.controls.phone">
+        <input
+          id="phone"
+          class="input"
+          type="tel"
+          formControlName="phone"
+          placeholder="+84 912 345 678"
+          aria-describedby="phone-error"
+        />
+      </app-form-field>
+
+      <app-form-field label="Position" for="position" [control]="form.controls.position" required>
+        <input
+          id="position"
+          class="input"
+          formControlName="position"
+          aria-describedby="position-error"
+        />
+      </app-form-field>
+      <app-form-field
+        label="Department"
+        for="departmentId"
+        [control]="form.controls.departmentId"
+        required
+        [hint]="isEdit() ? 'Changing it transfers the employee.' : ''"
+      >
+        <select
+          id="departmentId"
+          class="input"
+          formControlName="departmentId"
+          aria-describedby="departmentId-error"
+        >
+          <option value="" disabled>Choose a department</option>
+          @for (d of departments.hasValue() ? departments.value() : []; track d.id) {
+            <option [value]="d.id">{{ d.name }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        label="Hire date"
+        for="hireDate"
+        [control]="form.controls.hireDate"
+        required
+        [hint]="isEdit() ? 'Set when the employee was created.' : ''"
+      >
+        <input
+          id="hireDate"
+          class="input"
+          type="date"
+          formControlName="hireDate"
+          aria-describedby="hireDate-error"
+        />
+      </app-form-field>
+      <app-form-field label="Date of birth" for="dateOfBirth" [control]="form.controls.dateOfBirth">
+        <input
+          id="dateOfBirth"
+          class="input"
+          type="date"
+          formControlName="dateOfBirth"
+          aria-describedby="dateOfBirth-error"
+        />
+      </app-form-field>
+    </div>
+
+    <div class="flex justify-end gap-2 border-t border-border pt-5">
+      <a [routerLink]="backLink()" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : isEdit() ? 'Save changes' : 'Add employee' }}
+      </button>
+    </div>
+  </form>
+}

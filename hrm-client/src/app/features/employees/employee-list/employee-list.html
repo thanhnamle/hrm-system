@@ -1,2 +1,88 @@
-<h1 class="text-2xl font-semibold">Employees</h1>
-<p class="mt-2 text-muted">The employee table arrives in Phase 7.</p>
+<app-page-header title="Employees" description="Search, filter and open employee records.">
+  <a *appHasPermission="Permissions.EmployeesCreate" routerLink="new" class="btn-primary">
+    Add employee
+  </a>
+</app-page-header>
+
+<div class="mb-4 flex flex-wrap gap-3">
+  <div class="min-w-64 flex-1">
+    <label class="sr-only" for="search">Search employees</label>
+    <input
+      id="search"
+      class="input"
+      type="search"
+      placeholder="Search by name, email or code"
+      [value]="searchText()"
+      (input)="searchText.set(valueOf($event))"
+    />
+  </div>
+  <div class="w-52">
+    <label class="sr-only" for="department">Department</label>
+    <select id="department" class="input" (change)="department.set(valueOf($event))">
+      <option value="" [selected]="department() === ''">All departments</option>
+      @for (d of departments.hasValue() ? departments.value() : []; track d.id) {
+        <option [value]="d.id" [selected]="d.id === department()">{{ d.name }}</option>
+      }
+    </select>
+  </div>
+  <div class="w-40">
+    <label class="sr-only" for="status">Status</label>
+    <select id="status" class="input" (change)="status.set($any(valueOf($event)))">
+      <option value="Active" [selected]="status() === 'Active'">Active</option>
+      <option value="Terminated" [selected]="status() === 'Terminated'">Terminated</option>
+      <option value="" [selected]="status() === ''">All statuses</option>
+    </select>
+  </div>
+</div>
+
+<div class="table-wrap">
+  @if (employees.hasValue()) {
+    @let result = employees.value();
+    @if (result.items.length) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Name</th>
+            <th scope="col">Position</th>
+            <th scope="col">Department</th>
+            <th scope="col">Status</th>
+            <th scope="col">Hired</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of result.items; track e.id) {
+            <tr>
+              <td class="font-mono text-xs whitespace-nowrap text-muted">{{ e.employeeCode }}</td>
+              <td>
+                <a [routerLink]="e.id" class="font-medium text-brand-700 hover:underline">{{
+                  e.fullName
+                }}</a>
+                <div class="text-xs text-muted">{{ e.email }}</div>
+              </td>
+              <td>{{ e.position }}</td>
+              <td>{{ e.departmentName }}</td>
+              <td><app-badge [status]="e.status" /></td>
+              <!-- Date-only ("2026-11-16"): DatePipe reads it as a local date. Don't add 'UTC': that shifts it a day. -->
+              <td class="whitespace-nowrap">{{ e.hireDate | date: 'mediumDate' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <app-pagination
+        [page]="result.page"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        (pageChange)="page.set($event)"
+      />
+    } @else {
+      <app-empty-state title="No employees found" message="Try another search or filter." />
+    }
+  } @else if (employees.isLoading()) {
+    <app-loading label="Loading employees…" />
+  } @else if (employees.error()) {
+    <app-empty-state title="Employees could not be loaded">
+      <button type="button" class="btn-secondary" (click)="employees.reload()">Try again</button>
+    </app-empty-state>
+  }
+</div>

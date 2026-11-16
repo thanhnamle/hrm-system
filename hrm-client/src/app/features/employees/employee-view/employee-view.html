@@ -1,0 +1,95 @@
+<a routerLink="/employees" class="mb-4 inline-block text-sm text-muted hover:text-ink"
+  >← Employees</a
+>
+
+@if (employee.hasValue()) {
+  @let e = employee.value();
+  <app-page-header [title]="e.fullName" [description]="e.position + ' · ' + e.departmentName">
+    @if (e.status === 'Active') {
+      <a *appHasPermission="Permissions.EmployeesUpdate" routerLink="edit" class="btn-secondary"
+        >Edit</a
+      >
+      <button
+        *appHasPermission="Permissions.EmployeesTerminate"
+        type="button"
+        class="btn-danger"
+        [disabled]="terminating()"
+        (click)="terminate(e)"
+      >
+        {{ terminating() ? 'Terminating…' : 'Terminate' }}
+      </button>
+    }
+  </app-page-header>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <section class="card lg:col-span-2" aria-labelledby="details-heading">
+      <h2 id="details-heading" class="mb-4 font-semibold">Details</h2>
+      <dl class="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-muted">Employee code</dt>
+          <dd class="font-mono">{{ e.employeeCode }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Status</dt>
+          <dd><app-badge [status]="e.status" /></dd>
+        </div>
+        <div>
+          <dt class="text-muted">Email</dt>
+          <dd>
+            <a [href]="'mailto:' + e.email" class="text-brand-700 hover:underline">{{ e.email }}</a>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Phone</dt>
+          <dd>{{ e.phone ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Department</dt>
+          <dd>
+            {{ e.departmentName }}
+            @if (e.isDepartmentManager) {
+              <app-badge tone="brand" class="ml-1">Manager</app-badge>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Position</dt>
+          <dd>{{ e.position }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Hire date</dt>
+          <dd>{{ e.hireDate | date: 'longDate' }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Date of birth</dt>
+          <dd>{{ e.dateOfBirth ? (e.dateOfBirth | date: 'longDate') : '—' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="card" aria-labelledby="leave-heading">
+      <h2 id="leave-heading" class="font-semibold">Annual leave</h2>
+      <p class="mt-4 text-4xl font-semibold">{{ e.annualLeaveBalance | number: '1.0-1' }}</p>
+      <p class="text-sm text-muted">days remaining</p>
+      <p class="mt-6 text-xs text-muted">
+        Record created {{ e.createdAt | date: 'medium' }}
+        @if (e.updatedAt) {
+          · updated {{ e.updatedAt | date: 'medium' }}
+        }
+      </p>
+    </section>
+  </div>
+} @else if (employee.isLoading()) {
+  <app-loading label="Loading employee…" />
+} @else if (notFound()) {
+  <app-empty-state
+    title="Employee not found"
+    message="It doesn't exist, or it isn't visible to your role."
+  >
+    <a routerLink="/employees" class="btn-secondary">Back to employees</a>
+  </app-empty-state>
+} @else if (employee.error()) {
+  <app-empty-state title="The employee could not be loaded">
+    <button type="button" class="btn-secondary" (click)="employee.reload()">Try again</button>
+  </app-empty-state>
+}
