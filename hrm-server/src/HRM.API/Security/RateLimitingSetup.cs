@@ -9,7 +9,7 @@ public static class RateLimitingSetup
 
     /// <summary>
     /// 5 login attempts per minute per client IP (RateLimiting:LoginPermitLimit; integration tests raise it). Works together with Identity lockout (5 failures per account).
-    /// Behind Nginx the client IP comes from X-Forwarded-For, which is wired up with the Docker setup on Day 10.
+    /// Behind Nginx the client IP comes from X-Forwarded-For (see <see cref="ReverseProxySetup"/>).
     /// </summary>
     public static IServiceCollection AddLoginRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {

@@ -27,6 +27,7 @@ try
 
     builder.Services.AddPermissionPolicies();
     builder.Services.AddLoginRateLimiting(builder.Configuration);
+    builder.Services.AddReverseProxySupport(builder.Configuration);
 
     // Enums travel as names ("Annual", "Pending"), which is what the Angular client and Postman send back.
     builder.Services.AddControllers()
@@ -43,15 +44,22 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    // Development always migrates and seeds. Elsewhere it is opt-in: the Docker demo turns both on,
+    // a real production deploy would run migrations as a separate step and never seed demo data.
+    var migrate = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:MigrateOnStartup");
+    var seed = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:SeedDemoData");
+    if (migrate || seed)
     {
-        // Apply pending migrations and insert demo data. Production runs migrations as a separate deploy step.
         await using var scope = app.Services.CreateAsyncScope();
         var initializer = scope.ServiceProvider.GetRequiredService<DbInitializer>();
-        await initializer.MigrateAsync();
-        await initializer.SeedAsync();
+        if (migrate)
+            await initializer.MigrateAsync();
+        if (seed)
+            await initializer.SeedAsync();
     }
 
+    // First, so logging and the rate limiter see the real client IP (behind Nginx).
+    app.UseReverseProxySupport();
     // Outermost, so it logs the final status code (e.g. 401) rather than the exception the handler below turns into it.
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler();

@@ -38,7 +38,8 @@ public class DbInitializer(
         var password = configuration["Seed:DefaultPassword"];
         if (string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException(
-                "Seed:DefaultPassword is not set. Run: dotnet user-secrets set \"Seed:DefaultPassword\" \"<password>\" --project src/HRM.API");
+                "Seed:DefaultPassword is not set. Run: dotnet user-secrets set \"Seed:DefaultPassword\" \"<password>\" --project src/HRM.API "
+                + "(Docker: set SEED_PASSWORD in .env).");
 
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
