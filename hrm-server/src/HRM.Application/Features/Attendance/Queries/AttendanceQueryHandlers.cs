@@ -9,8 +9,22 @@ namespace HRM.Application.Features.Attendance.Queries;
 
 public sealed class AttendanceQueryHandlers(IApplicationDbContext db, ICurrentUser currentUser, IClock clock) :
     IRequestHandler<GetMyAttendanceQuery, PagedResult<AttendanceRecordDto>>,
-    IRequestHandler<GetTeamAttendanceQuery, PagedResult<TeamAttendanceDto>>
+    IRequestHandler<GetTeamAttendanceQuery, PagedResult<TeamAttendanceDto>>,
+    IRequestHandler<GetMyTodayAttendanceQuery, TodayAttendanceDto>
 {
+    public async Task<TodayAttendanceDto> Handle(GetMyTodayAttendanceQuery request, CancellationToken cancellationToken)
+    {
+        var employeeId = currentUser.RequireEmployeeId();
+        var today = clock.Today;
+
+        var record = await db.AttendanceRecords.AsNoTracking()
+            .Where(a => a.EmployeeId == employeeId && a.WorkDate == today)
+            .Select(a => new AttendanceRecordDto(a.Id, a.WorkDate, a.CheckInAt, a.CheckOutAt))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return new TodayAttendanceDto(today, record);
+    }
+
     public Task<PagedResult<AttendanceRecordDto>> Handle(GetMyAttendanceQuery request, CancellationToken cancellationToken)
     {
         var employeeId = currentUser.RequireEmployeeId();

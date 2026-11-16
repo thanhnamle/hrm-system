@@ -23,6 +23,11 @@ public sealed class AttendanceController(ISender sender) : ControllerBase
     public Task<AttendanceRecordDto> CheckOut(CancellationToken cancellationToken) =>
         sender.Send(new CheckOutCommand(), cancellationToken);
 
+    [HttpGet("today")]
+    [Authorize(Policy = Permissions.AttendanceRecord)]
+    public Task<TodayAttendanceDto> GetToday(CancellationToken cancellationToken) =>
+        sender.Send(new GetMyTodayAttendanceQuery(), cancellationToken);
+
     [HttpGet("mine")]
     [Authorize(Policy = Permissions.AttendanceRecord)]
     public Task<PagedResult<AttendanceRecordDto>> GetMine([FromQuery] GetMyAttendanceQuery query, CancellationToken cancellationToken) =>

@@ -84,6 +84,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | POST | `/api/leave-requests/{id}/approve`, `/reject` | `Leave.Approve` | own dept, not self |
 | GET | `/api/leave-requests?status=&type=&employeeId=&departmentId=&from=&to=` | `Leave.ViewAll` | |
 | POST | `/api/attendance/check-in`, `/check-out` | `Attendance.Record` | self |
+| GET | `/api/attendance/today` | `Attendance.Record` | self; the company's date and today's record |
 | GET | `/api/attendance/mine` | `Attendance.Record` | self |
 | GET | `/api/attendance?date=&departmentId=` | `Attendance.View` | role scope |
 | GET / POST | `/api/users` | `Users.Manage` | list; create the login for an employee |

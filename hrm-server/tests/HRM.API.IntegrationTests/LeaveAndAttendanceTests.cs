@@ -72,6 +72,28 @@ public class LeaveAndAttendanceTests(ApiFactory api)
         await (await engineer.PostJson("/api/attendance/check-in")).ShouldHaveStatus(HttpStatusCode.Conflict);
     }
 
+    private sealed record TodayResponse(DateOnly Today, object? Record);
+
+    [Fact]
+    public async Task Today_shows_the_company_date_and_the_record_once_checked_in()
+    {
+        var employee = await api.ClientFor(Accounts.Engineer2); // no other test checks this account in
+
+        var before = await (await employee.GetAsync("/api/attendance/today")).ReadAs<TodayResponse>();
+        before.Record.ShouldBeNull();
+
+        await (await employee.PostJson("/api/attendance/check-in")).ShouldHaveStatus(HttpStatusCode.OK);
+
+        var after = await (await employee.GetAsync("/api/attendance/today")).ReadAs<TodayResponse>();
+        after.Record.ShouldNotBeNull();
+        after.Today.ShouldBe(before.Today);
+    }
+
+    [Fact]
+    public async Task Admin_without_employee_record_has_no_today() =>
+        await (await (await api.ClientFor(Accounts.Admin)).GetAsync("/api/attendance/today"))
+            .ShouldHaveStatus(HttpStatusCode.Forbidden);
+
     [Theory]
     [InlineData(Accounts.Engineer, HttpStatusCode.Forbidden)]
     [InlineData(Accounts.EngineeringManager, HttpStatusCode.OK)]

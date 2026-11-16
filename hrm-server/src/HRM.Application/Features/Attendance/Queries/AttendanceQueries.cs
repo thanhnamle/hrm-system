@@ -4,6 +4,14 @@ using MediatR;
 
 namespace HRM.Application.Features.Attendance.Queries;
 
+/// <summary>
+/// The company's "today" and the caller's record for it (null if not checked in yet). The client
+/// uses this instead of its own clock, which may be in another time zone or simply wrong.
+/// </summary>
+public sealed record GetMyTodayAttendanceQuery : IRequest<TodayAttendanceDto>;
+
+public sealed record TodayAttendanceDto(DateOnly Today, AttendanceRecordDto? Record);
+
 /// <summary>The caller's own history, newest first.</summary>
 public sealed record GetMyAttendanceQuery : IRequest<PagedResult<AttendanceRecordDto>>, IPagedQuery
 {
