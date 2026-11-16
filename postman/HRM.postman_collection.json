@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e3ea4e3d-a659-5da5-b296-329462f43294",
     "name": "HRM System API",
-    "description": "End-to-end checks for the HRM backend, per role.\n\n1. Import this collection and `HRM.local.postman_environment.json`, select the **HRM Local** environment.\n2. Set `password` in the environment to your `Seed:DefaultPassword` user-secret.\n3. Start the API (`dotnet run --project src/HRM.API --launch-profile http` from `hrm-server/`).\n4. Run the collection with the Collection Runner, or send requests one by one starting with **00 Setup**.\n\nLogin is limited to 5 per minute per IP: folders 00-06 use 5 logins, so wait a minute before running **07 Logout**; 07 and 08 together use 4.\nRe-runs are safe: new records get unique names and leave dates are random weekdays 1-2 years ahead.",
+    "description": "End-to-end checks for the HRM backend, per role.\n\n1. Import this collection and one environment: **HRM Local** (`dotnet run`, port 5183) or **HRM Docker** (`docker compose up`, through Nginx on port 8080).\n2. Set `password` in the environment to the demo password: your `Seed:DefaultPassword` user-secret, or `SEED_PASSWORD` from `.env` for Docker.\n3. Start the API (`dotnet run --project src/HRM.API --launch-profile http` from `hrm-server/`), or the whole stack (`docker compose up -d --build`).\n4. Run the collection with the Collection Runner, or send requests one by one starting with **00 Setup**.\n\nLogin is limited to 5 per minute per IP: folders 00-06 use 5 logins, so wait a minute before running **07 Logout**; 07 and 08 together use 4.\nRe-runs are safe: new records get unique names and leave dates are random weekdays 1-2 years ahead.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1598,7 +1598,7 @@
                 "exec": [
                   "const d = new Date(); d.setDate(d.getDate() + 30 + Math.floor(Math.random() * 700));",
                   "while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);",
-                  "pm.collectionVariables.set(\"leaveDate\", d.toISOString().slice(0, 10));"
+                  "pm.collectionVariables.set(\"leaveDate\", d.getFullYear() + \"-\" + String(d.getMonth() + 1).padStart(2, \"0\") + \"-\" + String(d.getDate()).padStart(2, \"0\"));"
                 ]
               }
             },
@@ -1696,7 +1696,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const d = new Date(); d.setDate(d.getDate() - 7);",
-                  "pm.collectionVariables.set(\"pastDate\", d.toISOString().slice(0, 10));"
+                  "pm.collectionVariables.set(\"pastDate\", d.getFullYear() + \"-\" + String(d.getMonth() + 1).padStart(2, \"0\") + \"-\" + String(d.getDate()).padStart(2, \"0\"));"
                 ]
               }
             },
@@ -2018,7 +2018,7 @@
                 "exec": [
                   "const d = new Date(); d.setDate(d.getDate() + 30 + Math.floor(Math.random() * 700));",
                   "while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);",
-                  "pm.collectionVariables.set(\"cancelDate\", d.toISOString().slice(0, 10));"
+                  "pm.collectionVariables.set(\"cancelDate\", d.getFullYear() + \"-\" + String(d.getMonth() + 1).padStart(2, \"0\") + \"-\" + String(d.getDate()).padStart(2, \"0\"));"
                 ]
               }
             },
@@ -2132,7 +2132,7 @@
                 "exec": [
                   "const d = new Date(); d.setDate(d.getDate() + 30 + Math.floor(Math.random() * 700));",
                   "while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);",
-                  "pm.collectionVariables.set(\"managerLeaveDate\", d.toISOString().slice(0, 10));"
+                  "pm.collectionVariables.set(\"managerLeaveDate\", d.getFullYear() + \"-\" + String(d.getMonth() + 1).padStart(2, \"0\") + \"-\" + String(d.getDate()).padStart(2, \"0\"));"
                 ]
               }
             },
@@ -2383,6 +2383,38 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Today (Employee)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/attendance/today",
+            "description": "What the Check in / Check out page loads: the company date (Asia/Ho_Chi_Minh) and today's record, or null.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Today has the record just checked in\", () => { pm.expect(body.record !== null).to.be.true; pm.expect(body.record.workDate).to.eql(body.today); });"
                 ]
               }
             }
@@ -3572,6 +3604,806 @@
           ]
         }
       ]
+    },
+    {
+      "name": "09 Profile",
+      "description": "Skills, education and previous jobs, the CV (PDF) and the job history, on an employee this folder hires. Uses no logins.",
+      "item": [
+        {
+          "name": "Hire someone for the profile tests (HR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Profile\",\n  \"lastName\": \"Tester\",\n  \"email\": \"{{profileEmail}}\",\n  \"position\": \"Developer\",\n  \"departmentId\": \"{{engDeptId}}\",\n  \"hireDate\": \"2026-01-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"profileEmail\", \"profile.\" + Date.now() + \"@hrm.local\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"profileEmployeeId\", body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile starts with a Hired entry (HR)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"One Hired entry, no skills, no CV, no login\", () => { pm.expect(body.jobHistory.length).to.eql(1); pm.expect(body.jobHistory[0].changeType).to.eql(\"Hired\"); pm.expect(body.skills.length).to.eql(0); pm.expect(body.cv).to.eql(null); pm.expect(body.account).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile of a Sales employee as Manager -> 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{salesEmployeeId}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{managerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Own profile (Employee)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{employeeId}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Has a job history\", () => pm.expect(body.jobHistory.length).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set skills as Employee -> 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{employeeId}}/skills",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skills\": [\n    \"C#\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set skills (HR)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/skills",
+            "description": "Duplicates are removed ignoring case: \"c#\" is dropped.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skills\": [\n    \"C#\",\n    \"Angular\",\n    \"PostgreSQL\",\n    \"c#\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set an over-long skill -> 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/skills",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skills\": [\n    \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add education (HR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/qualifications",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Education\",\n  \"title\": \"BSc Computer Science\",\n  \"organization\": \"HCMUT\",\n  \"startDate\": \"2016-09-01\",\n  \"endDate\": \"2020-06-30\",\n  \"description\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"qualificationId\", body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add a previous job (HR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/qualifications",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PreviousJob\",\n  \"title\": \"Junior Developer\",\n  \"organization\": \"Acme\",\n  \"startDate\": \"2020-07-01\",\n  \"endDate\": \"2025-12-31\",\n  \"description\": \"Web apps\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add with end before start -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/qualifications",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Certificate\",\n  \"title\": \"AWS\",\n  \"organization\": \"Amazon\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2023-01-01\",\n  \"description\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the education (HR)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/qualifications/{{qualificationId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Education\",\n  \"title\": \"BEng Computer Science\",\n  \"organization\": \"HCMUT\",\n  \"startDate\": \"2016-09-01\",\n  \"endDate\": \"2020-06-30\",\n  \"description\": \"Honours\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload a CV (HR)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=hrmboundary"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/cv",
+            "description": "Sends a tiny PDF as a raw multipart body so the runner needs no file. In Postman you can also use Body > form-data, key \"file\" (type File).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "--hrmboundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"cv.pdf\"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.4\n1 0 obj << >> endobj\ntrailer << >>\n%%EOF\r\n--hrmboundary--\r\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Returns file info\", () => pm.expect(body.fileName).to.eql(\"cv.pdf\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload a file that is not a PDF -> 422",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=hrmboundary"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/cv",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "--hrmboundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"cv.pdf\"\r\nContent-Type: application/pdf\r\n\r\njust some text\r\n--hrmboundary--\r\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Download the CV (Manager, same department)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/cv",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{managerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"PDF, not sniffable\", () => { pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"application/pdf\"); pm.expect(pm.response.headers.get(\"X-Content-Type-Options\")).to.eql(\"nosniff\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Promote (HR, with a note)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Profile\",\n  \"lastName\": \"Tester\",\n  \"email\": \"{{profileEmail}}\",\n  \"position\": \"Senior Developer\",\n  \"departmentId\": \"{{engDeptId}}\",\n  \"phone\": null,\n  \"dateOfBirth\": null,\n  \"changeNote\": \"Annual review\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile shows everything (HR)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"3 skills, 2 qualifications, a CV\", () => { pm.expect(body.skills).to.eql([\"C#\", \"Angular\", \"PostgreSQL\"]); pm.expect(body.qualifications.length).to.eql(2); pm.expect(body.cv.fileName).to.eql(\"cv.pdf\"); });",
+                  "pm.test(\"Latest history entry (oldest first): PositionChanged with the note\", () => { const h = body.jobHistory[body.jobHistory.length - 1]; pm.expect(h.changeType).to.eql(\"PositionChanged\"); pm.expect(h.note).to.eql(\"Annual review\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the education (HR)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/qualifications/{{qualificationId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the CV (HR)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/cv",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Download after delete -> 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/cv",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Terminate with a note (HR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/terminate",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Resigned\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "History ends with Terminated (HR)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/employees/{{profileEmployeeId}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hrToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Terminated, note kept\", () => { const h = body.jobHistory[body.jobHistory.length - 1]; pm.expect(h.changeType).to.eql(\"Terminated\"); pm.expect(h.note).to.eql(\"Resigned\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -3705,6 +4537,18 @@
     },
     {
       "key": "accountToken",
+      "value": ""
+    },
+    {
+      "key": "profileEmail",
+      "value": ""
+    },
+    {
+      "key": "profileEmployeeId",
+      "value": ""
+    },
+    {
+      "key": "qualificationId",
       "value": ""
     }
   ]
