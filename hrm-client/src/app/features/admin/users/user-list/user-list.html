@@ -1,2 +1,216 @@
-<h1 class="text-2xl font-semibold">Users</h1>
-<p class="mt-2 text-muted">Account management arrives in Phase 9.</p>
+<app-page-header title="Users" description="Login accounts, roles and access.">
+  <button type="button" class="btn-primary" (click)="openCreate()">Create login</button>
+</app-page-header>
+
+<div class="table-wrap">
+  @if (users.isLoading() && !users.value().length) {
+    <app-loading label="Loading accounts…" />
+  } @else if (users.error()) {
+    <app-empty-state title="Accounts could not be loaded">
+      <button type="button" class="btn-secondary" (click)="users.reload()">Try again</button>
+    </app-empty-state>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">User</th>
+          <th scope="col">Role</th>
+          <th scope="col">Status</th>
+          <th scope="col"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of users.value(); track u.id) {
+          <tr>
+            <td>
+              <div class="font-medium">{{ u.fullName ?? 'System account' }}</div>
+              <div class="text-xs text-muted">{{ u.email }}</div>
+            </td>
+            <td>
+              <app-badge tone="brand">{{ u.role }}</app-badge>
+            </td>
+            <td>
+              @if (u.isLockedOut) {
+                <app-badge tone="danger">Locked</app-badge>
+              } @else {
+                <app-badge tone="success">Active</app-badge>
+              }
+            </td>
+            <td class="text-right whitespace-nowrap">
+              @if (u.id === myId()) {
+                <span class="text-xs text-muted">You</span>
+              } @else {
+                <button type="button" class="btn-ghost px-2 py-1" (click)="openRole(u)">
+                  Role
+                </button>
+                <button type="button" class="btn-ghost px-2 py-1" (click)="openReset(u)">
+                  Reset password
+                </button>
+                <button
+                  type="button"
+                  class="btn-ghost px-2 py-1"
+                  [class.text-danger]="!u.isLockedOut"
+                  (click)="toggleLock(u)"
+                >
+                  {{ u.isLockedOut ? 'Unlock' : 'Lock' }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+<!-- Create login -->
+<app-modal title="Create login" [open]="creating()" (closed)="creating.set(false)">
+  <form
+    id="create-form"
+    class="space-y-4"
+    [formGroup]="createForm"
+    (ngSubmit)="create()"
+    novalidate
+  >
+    @if (createErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of createErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+    <app-form-field
+      label="Employee"
+      for="employeeId"
+      [control]="createForm.controls.employeeId"
+      required
+      hint="Active employees without a login. Their sign-in email is their employee email."
+    >
+      <select
+        id="employeeId"
+        class="input"
+        formControlName="employeeId"
+        aria-describedby="employeeId-error"
+      >
+        <option value="" disabled>Choose an employee</option>
+        @for (e of withoutLogin(); track e.id) {
+          <option [value]="e.id">{{ e.fullName }} · {{ e.email }}</option>
+        } @empty {
+          <option value="" disabled>Every active employee already has a login</option>
+        }
+      </select>
+    </app-form-field>
+    <app-form-field label="Role" for="role" [control]="createForm.controls.role" required>
+      <select id="role" class="input" formControlName="role">
+        @for (r of roles; track r) {
+          <option [value]="r">{{ r }}</option>
+        }
+      </select>
+    </app-form-field>
+    <app-form-field
+      label="Temporary password"
+      for="password"
+      [control]="createForm.controls.password"
+      required
+      [hint]="passwordHint + ' Share it securely; the user can change it after signing in.'"
+    >
+      <div class="flex gap-2">
+        <input
+          id="password"
+          class="input font-mono"
+          formControlName="password"
+          autocomplete="off"
+          aria-describedby="password-error"
+        />
+        <button
+          type="button"
+          class="btn-secondary shrink-0"
+          (click)="newPassword(createForm.controls.password)"
+        >
+          Generate
+        </button>
+      </div>
+    </app-form-field>
+  </form>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="creating.set(false)">Cancel</button>
+    <button type="submit" form="create-form" class="btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Creating…' : 'Create login' }}
+    </button>
+  </div>
+</app-modal>
+
+<!-- Change role -->
+<app-modal
+  [title]="'Role of ' + (changingRole() ? name(changingRole()!) : '')"
+  [open]="changingRole() !== null"
+  (closed)="changingRole.set(null)"
+>
+  <app-form-field
+    label="Role"
+    for="new-role"
+    [control]="roleControl"
+    hint="They are signed out of every session and get the new role when they sign in again."
+  >
+    <select id="new-role" class="input" [formControl]="roleControl">
+      @for (r of roles; track r) {
+        <option [value]="r">{{ r }}</option>
+      }
+    </select>
+  </app-form-field>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="changingRole.set(null)">Cancel</button>
+    <button type="button" class="btn-primary" (click)="saveRole()">Save role</button>
+  </div>
+</app-modal>
+
+<!-- Reset password -->
+<app-modal
+  [title]="'Reset password for ' + (resetting() ? name(resetting()!) : '')"
+  [open]="resetting() !== null"
+  (closed)="resetting.set(null)"
+>
+  <form
+    id="reset-form"
+    class="space-y-4"
+    [formGroup]="resetForm"
+    (ngSubmit)="saveReset()"
+    novalidate
+  >
+    @if (resetErrors().length) {
+      <ul class="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+        @for (message of resetErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+    <app-form-field
+      label="New password"
+      for="newPassword"
+      [control]="resetForm.controls.newPassword"
+      required
+      [hint]="passwordHint"
+    >
+      <div class="flex gap-2">
+        <input
+          id="newPassword"
+          class="input font-mono"
+          formControlName="newPassword"
+          autocomplete="off"
+          aria-describedby="newPassword-error"
+        />
+        <button
+          type="button"
+          class="btn-secondary shrink-0"
+          (click)="newPassword(resetForm.controls.newPassword)"
+        >
+          Generate
+        </button>
+      </div>
+    </app-form-field>
+  </form>
+  <div modal-actions>
+    <button type="button" class="btn-secondary" (click)="resetting.set(null)">Cancel</button>
+    <button type="submit" form="reset-form" class="btn-danger">Reset password</button>
+  </div>
+</app-modal>
