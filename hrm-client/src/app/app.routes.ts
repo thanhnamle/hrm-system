@@ -46,6 +46,14 @@ export const routes: Routes = [
         loadChildren: () => import('./features/admin/admin.routes'),
       },
       {
+        path: 'account/password',
+        title: 'Change password · HRM',
+        loadComponent: () =>
+          import('./features/account/change-password/change-password').then(
+            (m) => m.ChangePassword,
+          ),
+      },
+      {
         path: 'forbidden',
         title: 'No access · HRM',
         loadComponent: () =>

@@ -7,6 +7,7 @@
         <p class="text-sm font-medium">{{ user.fullName ?? user.email }}</p>
         <p class="text-xs text-muted">{{ user.role }}</p>
       </div>
+      <a routerLink="/account/password" class="btn-ghost" routerLinkActive="text-ink">Password</a>
       <button type="button" class="btn-ghost" (click)="auth.logout()">Sign out</button>
     </div>
   }
