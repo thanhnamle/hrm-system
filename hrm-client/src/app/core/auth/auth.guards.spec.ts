@@ -9,7 +9,7 @@ import {
 } from '@angular/router';
 import { authGuard, employeeRecordGuard, guestGuard, permissionGuard } from './auth.guards';
 import { AuthService } from './auth.service';
-import { authResponse } from './auth.service.spec';
+import { authResponse } from '../../../testing/test-helpers';
 import { Permissions } from './permissions';
 
 describe('auth guards', () => {

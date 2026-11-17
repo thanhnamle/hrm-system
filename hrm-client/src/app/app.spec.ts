@@ -5,7 +5,7 @@ import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
-import { authResponse } from './core/auth/auth.service.spec';
+import { authResponse } from '../testing/test-helpers';
 
 describe('App', () => {
   let router: Router;

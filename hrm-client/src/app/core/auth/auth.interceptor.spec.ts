@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { authInterceptor, refreshInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
-import { authResponse } from './auth.service.spec';
+import { authResponse } from '../../../testing/test-helpers';
 
 describe('auth interceptors', () => {
   let client: HttpClient;

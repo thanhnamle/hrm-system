@@ -4,7 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Routes } from '@angular/router';
 import { authInterceptor } from '../app/core/auth/auth.interceptor';
 import { AuthService } from '../app/core/auth/auth.service';
-import { Permission, Role } from '../app/core/auth/permissions';
+import { Permission, Permissions, Role } from '../app/core/auth/permissions';
+import { AuthResponse } from '../app/core/models/auth';
 
 /** HttpClient (with the token interceptor) against HttpTestingController, plus a router. */
 export function provideTestApp(routes: Routes = []) {
@@ -56,3 +57,24 @@ export function polyfillDialog() {
     this.dispatchEvent(new Event('close'));
   };
 }
+
+/**
+ * A login/refresh response for an Employee. Shared by several specs, so it lives here:
+ * spec files must never import each other (the test builder can then run a spec's
+ * describe() inside the importing file, and Vitest reports "No test suite found").
+ */
+export const authResponse = (
+  token = 'token-1',
+  employeeId: string | null = 'emp-1',
+): AuthResponse => ({
+  accessToken: token,
+  expiresAt: '2030-01-01T00:00:00Z',
+  user: {
+    id: 'user-1',
+    email: 'huy.le@hrm.local',
+    role: 'Employee',
+    employeeId,
+    fullName: 'Huy Le',
+    permissions: [Permissions.EmployeesView, Permissions.LeaveRequest],
+  },
+});

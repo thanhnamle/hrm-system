@@ -2,25 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { AuthResponse } from '../models/auth';
+import { authResponse } from '../../../testing/test-helpers';
 import { AuthService } from './auth.service';
 import { Permissions } from './permissions';
-
-export const authResponse = (
-  token = 'token-1',
-  employeeId: string | null = 'emp-1',
-): AuthResponse => ({
-  accessToken: token,
-  expiresAt: '2030-01-01T00:00:00Z',
-  user: {
-    id: 'user-1',
-    email: 'huy.le@hrm.local',
-    role: 'Employee',
-    employeeId,
-    fullName: 'Huy Le',
-    permissions: [Permissions.EmployeesView, Permissions.LeaveRequest],
-  },
-});
 
 describe('AuthService', () => {
   let auth: AuthService;
