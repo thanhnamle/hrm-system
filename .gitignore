@@ -430,8 +430,10 @@ test-results/
 .AppleDouble
 .LSOverride
 
-# Icon must end with two \r
-Icon
+# macOS folder icons are files named Icon followed by a carriage return.
+# Only that exact name: a bare "Icon" would also ignore folders like src/app/shared/ui/icon
+# (Windows matches case-insensitively).
+Icon[\r]
 
 
 # Thumbnails
