@@ -68,7 +68,10 @@ public sealed class GetDashboardHandler(
             await LeaveDaysThisYearAsync(db.LeaveRequests, today, ct),
             await OldestPendingAsync(ct),
             await UpcomingLeaveAsync(active, today, ct),
-            await ActivityAsync(db.JobHistory, ListSize + 1, ct));
+            await ActivityAsync(db.JobHistory, ListSize + 1, ct),
+            await DashboardTrends.AttendanceAsync(db, db.Employees, today, ct),
+            await DashboardTrends.HeadcountAsync(db, db.Employees, today, ct),
+            await DashboardTrends.LeaveByMonthAsync(db, db.Employees, today, ct));
     }
 
     // ---- Team ----------------------------------------------------------------------------------
@@ -91,7 +94,8 @@ public sealed class GetDashboardHandler(
             Breakdown(rows),
             rows.Select(r => new TeamMemberToday(r.Id, r.Name, r.Position, StatusOf(r), r.CheckInAt, r.CheckOutAt)).ToList(),
             await OldestPendingAsync(ct),
-            await UpcomingLeaveAsync(team, today, ct));
+            await UpcomingLeaveAsync(team, today, ct),
+            await DashboardTrends.AttendanceAsync(db, db.Employees.ApplyScope(currentUser), today, ct));
     }
 
     // ---- Personal ------------------------------------------------------------------------------
@@ -156,7 +160,8 @@ public sealed class GetDashboardHandler(
                 me.SkillsCount, me.QualificationsCount, me.HasCv, lastChange),
             await LeaveDaysThisYearAsync(mine, today, ct),
             nextLeave,
-            new MonthAttendance(month.Count, WorkingDays.Count(monthStart, today), Math.Round(hours, 1)));
+            new MonthAttendance(month.Count, WorkingDays.Count(monthStart, today), Math.Round(hours, 1)),
+            await DashboardTrends.HoursByWeekAsync(db, employeeId, today, ct));
     }
 
     // ---- Data quality --------------------------------------------------------------------------

@@ -33,6 +33,33 @@ public class DashboardTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task Trends_cover_the_expected_periods()
+    {
+        var dashboard = await Get(Accounts.Hr);
+        var org = dashboard.Organization!;
+
+        // Working days of the last 30 days, oldest first, ending today when today is a weekday.
+        org.AttendanceTrend.ShouldAllBe(d => d.Date.DayOfWeek != DayOfWeek.Saturday && d.Date.DayOfWeek != DayOfWeek.Sunday);
+        org.AttendanceTrend.ShouldBe(org.AttendanceTrend.OrderBy(d => d.Date).ToList());
+        org.AttendanceTrend.Count.ShouldBeInRange(20, 23);
+        org.AttendanceTrend.ShouldAllBe(d => d.Present <= d.Expected + 1 && d.Expected > 0);
+
+        org.HeadcountTrend.Count.ShouldBe(12);
+        org.HeadcountTrend[^1].Month.ShouldBe(new DateOnly(dashboard.Today.Year, dashboard.Today.Month, 1));
+        org.HeadcountTrend[^1].Headcount.ShouldBeGreaterThan(0);
+
+        org.LeaveByMonth.Count.ShouldBe(9); // 6 months back, this month, 2 ahead
+
+        var team = (await Get(Accounts.EngineeringManager)).Team!;
+        team.AttendanceTrend.ShouldNotBeEmpty();
+        team.AttendanceTrend.ShouldAllBe(d => d.Expected <= org.AttendanceTrend.First(o => o.Date == d.Date).Expected);
+
+        var weeks = (await Get(Accounts.SalesPerson)).Personal!.HoursByWeek;
+        weeks.Count.ShouldBe(8);
+        weeks.ShouldAllBe(w => w.WeekStart.DayOfWeek == DayOfWeek.Monday);
+    }
+
+    [Fact]
     public async Task System_status_reports_the_database_check()
     {
         var system = (await Get(Accounts.Admin)).System!;
@@ -106,7 +133,7 @@ public class DashboardTests(ApiFactory api)
 
     // Only the fields the tests read.
     private sealed record DashboardResponse(
-        string Role, OrgResponse? Organization, TeamResponse? Team, PersonalResponse? Personal, QualityResponse? DataQuality, SystemResponse? System);
+        string Role, DateOnly Today, OrgResponse? Organization, TeamResponse? Team, PersonalResponse? Personal, QualityResponse? DataQuality, SystemResponse? System);
 
     private sealed record Breakdown(int CheckedOut, int Working, int OnLeave, int NotCheckedIn);
     private sealed record TypeDays(string Type, decimal Days);
@@ -116,14 +143,21 @@ public class DashboardTests(ApiFactory api)
 
     private sealed record OrgResponse(
         int Headcount, List<DepartmentCount> HeadcountByDepartment, Breakdown AttendanceToday,
-        List<TypeDays> LeaveDaysThisYear, List<Request> PendingRequests, List<Activity> RecentActivity);
+        List<TypeDays> LeaveDaysThisYear, List<Request> PendingRequests, List<Activity> RecentActivity,
+        List<Day> AttendanceTrend, List<MonthCount> HeadcountTrend, List<MonthLeave> LeaveByMonth);
+
+    private sealed record Day(DateOnly Date, int Present, int OnLeave, int Expected);
+    private sealed record MonthCount(DateOnly Month, int Headcount, int Hires, int Leavers);
+    private sealed record MonthLeave(DateOnly Month, decimal Annual, decimal Sick, decimal Unpaid);
+    private sealed record Week(DateOnly WeekStart, double Hours, int DaysPresent);
 
     private sealed record Member(string Status);
-    private sealed record TeamResponse(int TeamSize, string DepartmentName, Breakdown AttendanceToday, List<Member> Members, List<Request> PendingRequests);
+    private sealed record TeamResponse(
+        int TeamSize, string DepartmentName, Breakdown AttendanceToday, List<Member> Members, List<Request> PendingRequests, List<Day> AttendanceTrend);
 
     private sealed record Profile(string EmployeeCode, string DepartmentName, Activity? LastChange);
     private sealed record Month(int DaysPresent, int WorkingDaysSoFar, double HoursWorked);
-    private sealed record PersonalResponse(Profile Profile, List<TypeDays> LeaveDaysThisYear, Month AttendanceThisMonth);
+    private sealed record PersonalResponse(Profile Profile, List<TypeDays> LeaveDaysThisYear, Month AttendanceThisMonth, List<Week> HoursByWeek);
 
     private sealed record RoleCount(string Role, int Count);
     private sealed record Gap(List<string> Missing);

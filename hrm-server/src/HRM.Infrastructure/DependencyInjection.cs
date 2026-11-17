@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration);
 
         services.AddScoped<DbInitializer>();
+        services.AddScoped<DemoHistorySeeder>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<AppDbContext>("postgresql");

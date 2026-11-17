@@ -55,7 +55,11 @@ try
         if (migrate)
             await initializer.MigrateAsync();
         if (seed)
+        {
             await initializer.SeedAsync();
+            // Past attendance and leave for the dashboard charts (demo only; skipped once present).
+            await scope.ServiceProvider.GetRequiredService<DemoHistorySeeder>().SeedAsync();
+        }
     }
 
     // First, so logging and the rate limiter see the real client IP (behind Nginx).

@@ -31,7 +31,10 @@ public sealed record OrganizationSummary(
     IReadOnlyList<LeaveTypeDays> LeaveDaysThisYear,
     IReadOnlyList<LeaveRequestDto> PendingRequests,  // oldest first, the ones waiting longest
     IReadOnlyList<LeaveRequestDto> UpcomingLeave,    // approved, today and the next 14 days
-    IReadOnlyList<ActivityItem> RecentActivity);     // latest job history entries
+    IReadOnlyList<ActivityItem> RecentActivity,      // latest job history entries
+    IReadOnlyList<DailyAttendance> AttendanceTrend,  // working days of the last 30 days, oldest first
+    IReadOnlyList<MonthHeadcount> HeadcountTrend,    // the last 12 months, oldest first
+    IReadOnlyList<MonthLeave> LeaveByMonth);         // approved leave days, 6 months back to 2 ahead
 
 public sealed record DepartmentHeadcount(Guid DepartmentId, string DepartmentName, int Headcount, string? ManagerName);
 
@@ -40,6 +43,15 @@ public sealed record AttendanceBreakdown(int CheckedOut, int Working, int OnLeav
 
 /// <summary>Approved leave days starting this year. Every leave type is listed, 0 when unused.</summary>
 public sealed record LeaveTypeDays(LeaveType Type, decimal Days);
+
+/// <param name="Expected">People employed that day (hired, not yet left), so the rate is Present / Expected.</param>
+public sealed record DailyAttendance(DateOnly Date, int Present, int OnLeave, int Expected);
+
+/// <param name="Headcount">Employed at the end of the month (today for the current month).</param>
+public sealed record MonthHeadcount(DateOnly Month, int Headcount, int Hires, int Leavers);
+
+/// <summary>Approved leave days by the month the leave starts in.</summary>
+public sealed record MonthLeave(DateOnly Month, decimal Annual, decimal Sick, decimal Unpaid);
 
 public sealed record ActivityItem(
     Guid EmployeeId,
@@ -61,7 +73,8 @@ public sealed record TeamSummary(
     AttendanceBreakdown AttendanceToday,
     IReadOnlyList<TeamMemberToday> Members,
     IReadOnlyList<LeaveRequestDto> PendingRequests,
-    IReadOnlyList<LeaveRequestDto> UpcomingLeave);
+    IReadOnlyList<LeaveRequestDto> UpcomingLeave,
+    IReadOnlyList<DailyAttendance> AttendanceTrend);
 
 public enum TodayStatus
 {
@@ -91,7 +104,11 @@ public sealed record PersonalSummary(
     MyProfile Profile,
     IReadOnlyList<LeaveTypeDays> LeaveDaysThisYear,
     LeaveRequestDto? NextLeave,          // approved leave that hasn't ended yet, the soonest
-    MonthAttendance AttendanceThisMonth);
+    MonthAttendance AttendanceThisMonth,
+    IReadOnlyList<WeekHours> HoursByWeek); // the last 8 weeks (Monday start), oldest first
+
+/// <param name="Hours">Completed days only (checked in and out).</param>
+public sealed record WeekHours(DateOnly WeekStart, double Hours, int DaysPresent);
 
 public sealed record MyProfile(
     string EmployeeCode,
