@@ -9,4 +9,7 @@ public static class HrmClaimTypes
     public const string Email = "email";
     public const string Role = "role";
     public const string EmployeeId = "employee_id";
+
+    /// <summary>Fingerprint of the account's security stamp; see AuthUser.SessionStamp.</summary>
+    public const string SessionStamp = "sst";
 }

@@ -18,6 +18,7 @@ public class DbInitializer(
     RoleManager<AppRole> roleManager,
     IConfiguration configuration,
     TimeProvider timeProvider,
+    EmployeeCodeGenerator codeGenerator,
     ILogger<DbInitializer> logger)
 {
     public const string AdminEmail = "admin@hrm.local";
@@ -62,10 +63,15 @@ public class DbInitializer(
             ("Ngoc", "Hoang", "Sales Associate", sales, Roles.Employee, 6),
         ];
 
+        // Codes from the same sequence the app uses, so the first employee created later gets the next one.
+        var codes = new List<string>();
+        foreach (var _ in people)
+            codes.Add(await codeGenerator.NextAsync(cancellationToken));
+
         var employees = people
             .Select((p, i) => (
                 Employee: Employee.Hire(
-                    $"EMP-{i + 1:0000}", p.First, p.Last, $"{p.First}.{p.Last}@hrm.local",
+                    codes[i], p.First, p.Last, $"{p.First}.{p.Last}@hrm.local",
                     p.Position, p.Department.Id, today.AddMonths(-p.MonthsEmployed)),
                 p.Role))
             .ToList();

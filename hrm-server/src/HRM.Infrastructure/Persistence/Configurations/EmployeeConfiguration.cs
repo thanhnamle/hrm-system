@@ -20,6 +20,11 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.AnnualLeaveBalance).HasPrecision(4, 1);
 
+        // Concurrency token (PostgreSQL xmin, no real column). Leave changes already run under the
+        // employee row lock; this is the safety net for any other write that didn't take it: saving an
+        // employee someone else changed since it was read fails with 409 instead of overwriting.
+        builder.Property<uint>("Version").IsRowVersion();
+
         builder.HasIndex(e => e.EmployeeCode).IsUnique();
         builder.HasIndex(e => e.Email).IsUnique();
         builder.HasIndex(e => e.DepartmentId);

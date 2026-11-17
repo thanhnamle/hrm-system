@@ -9,7 +9,7 @@ namespace HRM.Application.Tests.Auth;
 public class LoginTests
 {
     private static readonly AuthUser Manager =
-        new(Guid.CreateVersion7(), "minh.nguyen@hrm.local", Roles.Manager, Guid.CreateVersion7(), "Minh Nguyen");
+        new(Guid.CreateVersion7(), "minh.nguyen@hrm.local", Roles.Manager, Guid.CreateVersion7(), "Minh Nguyen", "stamp");
 
     private readonly IIdentityService _identity = Substitute.For<IIdentityService>();
     private readonly IJwtTokenService _jwt = Substitute.For<IJwtTokenService>();

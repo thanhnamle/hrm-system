@@ -4,6 +4,7 @@ using HRM.Application.Features.Users.Queries.GetUsers;
 using HRM.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace HRM.Infrastructure.Identity;
@@ -12,6 +13,7 @@ public sealed class IdentityService(
     UserManager<AppUser> userManager,
     AppDbContext db,
     TimeProvider timeProvider,
+    IMemoryCache sessionCache,
     ILogger<IdentityService> logger) : IIdentityService
 {
     public async Task<AuthUser?> AuthenticateAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -135,7 +137,10 @@ public sealed class IdentityService(
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         ThrowIfFailed(await userManager.RemoveFromRolesAsync(user, current), "Role");
         ThrowIfFailed(await userManager.AddToRoleAsync(user, role), "Role");
+        // A new stamp in the same transaction: tokens issued with the old role stop working.
+        ThrowIfFailed(await userManager.UpdateSecurityStampAsync(user), "User");
         await transaction.CommitAsync(cancellationToken);
+        SessionValidator.Evict(sessionCache, user.Id);
 
         logger.LogInformation("Changed role of user {UserId} from {OldRole} to {NewRole}", userId, string.Join(",", current), role);
     }
@@ -148,6 +153,10 @@ public sealed class IdentityService(
         ThrowIfFailed(await userManager.SetLockoutEndDateAsync(user, locked ? DateTimeOffset.MaxValue : null), "User");
         if (!locked)
             ThrowIfFailed(await userManager.ResetAccessFailedCountAsync(user), "User");
+        else
+            // Not only blocked while locked: tokens from before the lock stay dead after an unlock too.
+            ThrowIfFailed(await userManager.UpdateSecurityStampAsync(user), "User");
+        SessionValidator.Evict(sessionCache, user.Id);
 
         logger.LogInformation("User {UserId} {Action}", userId, locked ? "locked" : "unlocked");
     }
@@ -156,7 +165,8 @@ public sealed class IdentityService(
     {
         var user = await FindAsync(userId);
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        ThrowIfFailed(await userManager.ResetPasswordAsync(user, token, newPassword), "NewPassword");
+        ThrowIfFailed(await userManager.ResetPasswordAsync(user, token, newPassword), "NewPassword"); // renews the stamp
+        SessionValidator.Evict(sessionCache, user.Id);
         logger.LogInformation("Password of user {UserId} was reset by an administrator", userId);
     }
 
@@ -166,8 +176,17 @@ public sealed class IdentityService(
         if (!await userManager.CheckPasswordAsync(user, currentPassword))
             throw ValidationException.For("CurrentPassword", "Current password is incorrect.");
 
-        ThrowIfFailed(await userManager.ChangePasswordAsync(user, currentPassword, newPassword), "NewPassword");
+        ThrowIfFailed(await userManager.ChangePasswordAsync(user, currentPassword, newPassword), "NewPassword"); // renews the stamp
+        SessionValidator.Evict(sessionCache, user.Id);
         logger.LogInformation("User {UserId} changed their password", userId);
+    }
+
+    public async Task EndSessionsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await FindAsync(userId);
+        ThrowIfFailed(await userManager.UpdateSecurityStampAsync(user), "User");
+        SessionValidator.Evict(sessionCache, user.Id);
+        logger.LogInformation("Ended all sessions of user {UserId}", userId);
     }
 
     private async Task<AppUser> FindAsync(Guid userId) =>
@@ -204,6 +223,6 @@ public sealed class IdentityService(
             fullName = $"{employee.FirstName} {employee.LastName}";
         }
 
-        return new AuthUser(user.Id, user.Email!, role, user.EmployeeId, fullName);
+        return new AuthUser(user.Id, user.Email!, role, user.EmployeeId, fullName, SessionValidator.Fingerprint(user.SecurityStamp));
     }
 }

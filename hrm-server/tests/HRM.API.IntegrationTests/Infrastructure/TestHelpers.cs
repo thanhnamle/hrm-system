@@ -27,6 +27,41 @@ public static class Json
     };
 }
 
+/// <summary>A brand-new employee with a login, for tests that change or race on an account.</summary>
+public sealed record TestAccount(HttpClient Client, string Email, Guid EmployeeId, Guid UserId);
+
+public static class AccountFactory
+{
+    public const string Password = "Start#2026a";
+
+    /// <summary>
+    /// A new employee in a new department, with a login, signed in. Tests that lock, terminate or
+    /// race on an account use one of these, so the shared seed accounts are never affected.
+    /// </summary>
+    public static async Task<TestAccount> NewEmployeeWithLoginAsync(this ApiFactory api, string tag, string role = "Employee")
+    {
+        var hr = await api.ClientFor(Accounts.Hr);
+        var body = EmployeeAccessTests.NewEmployee(await EmployeeAccessTests.NewDepartment(hr), tag);
+        var email = (string)body.GetType().GetProperty("email")!.GetValue(body)!;
+        var employeeId = (await (await hr.PostJson("/api/employees", body)).ReadAs<IdResponse>()).Id;
+
+        var created = await (await api.ClientFor(Accounts.Admin)).PostJson("/api/users", new { employeeId, role, password = Password });
+        await created.ShouldHaveStatus(HttpStatusCode.Created);
+        var userId = (await created.ReadAs<IdResponse>()).Id;
+
+        return new TestAccount(await api.FreshClientFor(email), email, employeeId, userId);
+    }
+
+    /// <summary>A client with a newly issued token (ClientFor caches one token per account).</summary>
+    public static async Task<HttpClient> FreshClientFor(this ApiFactory api, string email, string password = Password)
+    {
+        var client = api.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", await api.LoginAsync(email, password));
+        return client;
+    }
+}
+
 public static class HttpExtensions
 {
     public static async Task<T> ReadAs<T>(this HttpResponseMessage response) =>

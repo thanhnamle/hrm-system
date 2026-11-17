@@ -38,6 +38,8 @@ public static class DependencyInjection
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<EmployeeCodeGenerator>();
+        services.AddScoped<IEmployeeCodeGenerator>(sp => sp.GetRequiredService<EmployeeCodeGenerator>());
 
         // Identity stores + UserManager/RoleManager. No cookie sign-in: the API only accepts JWT bearer tokens.
         services.AddIdentityCore<AppUser>(options =>
@@ -72,6 +74,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddMemoryCache();
+        services.AddScoped<SessionValidator>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -90,6 +94,22 @@ public static class DependencyInjection
                     NameClaimType = HrmClaimTypes.Email,
                     RoleClaimType = HrmClaimTypes.Role,
                     ClockSkew = TimeSpan.FromSeconds(30), // default is 5 minutes, too long for 15-minute tokens
+                };
+
+                // A valid signature isn't enough: the account must not have changed since the token was
+                // issued (terminated, locked, new role or password). See SessionValidator.
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var principal = context.Principal!;
+                        var validator = context.HttpContext.RequestServices.GetRequiredService<SessionValidator>();
+                        var current = Guid.TryParse(principal.FindFirst(HrmClaimTypes.Subject)?.Value, out var userId)
+                            && await validator.IsCurrentAsync(
+                                userId, principal.FindFirst(HrmClaimTypes.SessionStamp)?.Value, context.HttpContext.RequestAborted);
+                        if (!current)
+                            context.Fail("The session has ended.");
+                    },
                 };
             });
     }

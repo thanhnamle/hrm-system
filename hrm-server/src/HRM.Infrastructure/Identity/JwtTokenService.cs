@@ -22,6 +22,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider t
             [HrmClaimTypes.Subject] = user.Id.ToString(),
             [HrmClaimTypes.Email] = user.Email,
             [HrmClaimTypes.Role] = user.Role,
+            [HrmClaimTypes.SessionStamp] = user.SessionStamp,
             [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString(),
         };
         if (user.EmployeeId is { } employeeId)

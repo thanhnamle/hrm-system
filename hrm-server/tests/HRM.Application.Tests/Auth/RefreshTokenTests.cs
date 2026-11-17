@@ -9,7 +9,7 @@ namespace HRM.Application.Tests.Auth;
 public class RefreshTokenTests
 {
     private static readonly AuthUser Employee =
-        new(Guid.CreateVersion7(), "huy.le@hrm.local", Roles.Employee, Guid.CreateVersion7(), "Huy Le");
+        new(Guid.CreateVersion7(), "huy.le@hrm.local", Roles.Employee, Guid.CreateVersion7(), "Huy Le", "stamp");
 
     private static readonly RefreshTokenRotation Rotation =
         new(Employee.Id, new IssuedRefreshToken("new", DateTimeOffset.UtcNow.AddDays(7)));

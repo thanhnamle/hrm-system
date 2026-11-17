@@ -46,9 +46,20 @@ public interface IIdentityService
 
     /// <summary>Throws ValidationException (field "CurrentPassword") if the current password is wrong.</summary>
     Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ends every session of the account now: access tokens already issued stop working on their
+    /// next request (refresh tokens are revoked separately by IRefreshTokenService). Role changes,
+    /// locking and password changes do this themselves.
+    /// </summary>
+    Task EndSessionsAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>An account that is allowed to sign in. One role per user.</summary>
-public sealed record AuthUser(Guid Id, string Email, string Role, Guid? EmployeeId, string? FullName);
+/// <param name="SessionStamp">
+/// Fingerprint of the account's security stamp, put in the access token so a changed account
+/// (terminated, locked, new role or password) invalidates tokens already issued. Never sent to the client.
+/// </param>
+public sealed record AuthUser(Guid Id, string Email, string Role, Guid? EmployeeId, string? FullName, string SessionStamp);
 
 public sealed record AccountSummary(Guid UserId, string Role, bool IsLockedOut);

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e3ea4e3d-a659-5da5-b296-329462f43294",
     "name": "HRM System API",
-    "description": "End-to-end checks for the HRM backend, per role.\n\n1. Import this collection and one environment: **HRM Local** (`dotnet run`, port 5183) or **HRM Docker** (`docker compose up`, through Nginx on port 8080).\n2. Set `password` in the environment to the demo password: your `Seed:DefaultPassword` user-secret, or `SEED_PASSWORD` from `.env` for Docker.\n3. Start the API (`dotnet run --project src/HRM.API --launch-profile http` from `hrm-server/`), or the whole stack (`docker compose up -d --build`).\n4. Run the collection with the Collection Runner, or send requests one by one starting with **00 Setup**.\n\nLogin is limited to 5 per minute per IP: folders 00-06 use 5 logins, so wait a minute before running **07 Logout**; 07 and 08 together use 4.\nRe-runs are safe: new records get unique names and leave dates are random weekdays 1-2 years ahead.",
+    "description": "End-to-end checks for the HRM backend, per role.\n\n1. Import this collection and one environment: **HRM Local** (`dotnet run`, port 5183) or **HRM Docker** (`docker compose up`, through Nginx on port 8080).\n2. Set `password` in the environment to the demo password: your `Seed:DefaultPassword` user-secret, or `SEED_PASSWORD` from `.env` for Docker.\n3. Start the API (`dotnet run --project src/HRM.API --launch-profile http` from `hrm-server/`), or the whole stack (`docker compose up -d --build`).\n4. Run the collection with the Collection Runner, or send requests one by one starting with **00 Setup**.\n\nLogin is limited to 5 per minute per IP: folders 00-06 use 5 logins, so wait a minute before running **07 Logout**; 07 and 08 together use 5.\nRe-runs are safe: new records get unique names and leave dates are random weekdays 1-2 years ahead.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -2856,7 +2856,7 @@
     },
     {
       "name": "08 Users",
-      "description": "Admin account management, run on an account this folder creates (your demo logins are never changed). Uses 3 logins: run it in the same minute as 07 Logout, or wait a minute.",
+      "description": "Admin account management, run on an account this folder creates (your demo logins are never changed). Uses 4 logins: wait a minute after 06 before running 07 and 08 together (5 logins).",
       "item": [
         {
           "name": "Hire someone without a login (HR)",
@@ -3141,7 +3141,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/users/{{accountUserId}}/role",
-            "description": "Revokes the user's refresh tokens, so the new role is in their next token.",
+            "description": "Ends the user's sessions: refresh tokens are revoked and access tokens already issued stop working.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -3169,6 +3169,74 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Old token after the role change -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "The token still says Employee; it must not keep working after the role changed.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accountToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{accountEmail}}\",\n  \"password\": \"{{accountPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"accountToken\", body.accessToken);"
                 ]
               }
             }
