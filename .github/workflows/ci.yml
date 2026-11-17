@@ -73,7 +73,25 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run format:check
-      - run: npx ng test --watch=false
+      # The github-actions reporter turns each failing test into an annotation (visible on the run
+      # and in pull requests). The output is also kept for the summary step below.
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          npx ng test --watch=false --reporters=default --reporters=github-actions 2>&1 | tee test-output.txt
+
+      # Logs need a GitHub sign-in; the run summary doesn't. On failure, put the end of the test
+      # output there (compile errors never become annotations).
+      - name: Test output in the run summary
+        if: failure()
+        run: |
+          {
+            echo '### Frontend test output (last 80 lines)'
+            echo '```'
+            tail -n 80 test-output.txt | sed 's/\x1b\[[0-9;]*m//g'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - run: npm run build
 
   docker:
