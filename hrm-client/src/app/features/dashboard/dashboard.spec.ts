@@ -337,6 +337,51 @@ describe('Dashboard', () => {
     expect(actions).toEqual(['Request leave', 'Check in / out']);
   });
 
+  it('survives a response from an older API: hides what it cannot show and says why', async () => {
+    signInAs('Admin', [Permissions.EmployeesView], null);
+    // Exactly what the API sent before the dashboard redesign: no attendanceToday, no trends.
+    const { el } = await render({
+      role: 'Admin',
+      today: '2030-01-07',
+      organization: {
+        headcount: 10,
+        onLeaveToday: 0,
+        pendingApprovals: 0,
+        headcountByDepartment: [
+          { departmentId: 'eng', departmentName: 'Engineering', headcount: 5 },
+        ],
+      },
+      team: null,
+      personal: null,
+    } as unknown as DashboardSummary);
+
+    expect(text(el)).toContain('Some dashboard data is missing');
+    expect(text(el)).toContain('Restart the API');
+    expect(el.querySelector('app-organization-section')).toBeNull();
+    expect(el.querySelector('h1')?.textContent).toMatch(/^Good (morning|afternoon|evening)/); // greeting still shown
+  });
+
+  it('shows the sections it can when only the trends are missing', async () => {
+    signInAs('HR', [Permissions.EmployeesView]);
+    // The response from the first redesign: everything except the trend lists.
+    const olderOrg: Record<string, unknown> = { ...hrSummary.organization };
+    delete olderOrg['attendanceTrend'];
+    delete olderOrg['headcountTrend'];
+    delete olderOrg['leaveByMonth'];
+    const olderMe: Record<string, unknown> = { ...personal };
+    delete olderMe['hoursByWeek'];
+    const { el } = await render({
+      ...hrSummary,
+      organization: olderOrg,
+      personal: olderMe,
+    } as unknown as DashboardSummary);
+
+    expect(text(el)).toContain('Some dashboard data is missing');
+    expect(el.querySelector('app-organization-section')).not.toBeNull();
+    expect(tile(el, 'Active employees')).toContain('10');
+    expect(text(el)).toContain('Attendance will appear here once people check in');
+  });
+
   it('reloads by itself every minute', async () => {
     // Only the interval: Angular's own scheduling uses setTimeout, which must stay real.
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });

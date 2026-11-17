@@ -13,6 +13,8 @@ export interface DashboardSummary {
   personal: PersonalSummary | null; // anyone with an employee record
   dataQuality: DataQualitySummary | null; // Admin, HR
   system: SystemStatus | null; // Admin, HR
+  /** Set by the client when the response lacked data this page expects (an older API). */
+  incomplete?: boolean;
 }
 
 /** Active employees by today's state; the four numbers add up to the headcount. */

@@ -36,6 +36,19 @@
       </button>
     </div>
 
+    @if (s.incomplete) {
+      <div
+        class="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"
+        role="status"
+      >
+        <p class="font-medium">Some dashboard data is missing</p>
+        <p class="mt-0.5 text-muted">
+          The API sent an older version of the dashboard, so some sections are hidden or empty.
+          Restart the API so it runs the latest code, then refresh.
+        </p>
+      </div>
+    }
+
     @if (story(); as st) {
       <app-story-banner [story]="st" [greeting]="greeting()" [today]="s.today" />
     } @else {
