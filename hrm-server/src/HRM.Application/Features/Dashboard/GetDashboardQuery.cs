@@ -1,4 +1,6 @@
+using HRM.Application.Common.Interfaces;
 using HRM.Application.Features.LeaveRequests;
+using HRM.Domain.Enums;
 using MediatR;
 
 namespace HRM.Application.Features.Dashboard;
@@ -9,19 +11,75 @@ public sealed record GetDashboardQuery : IRequest<DashboardDto>;
 public sealed record DashboardDto(
     string Role,
     DateOnly Today,
+    bool IsWorkingDay,
     OrganizationSummary? Organization, // Admin, HR
     TeamSummary? Team,                 // Manager
-    PersonalSummary? Personal);        // anyone with an employee record
+    PersonalSummary? Personal,         // anyone with an employee record
+    DataQualitySummary? DataQuality,   // Admin, HR
+    SystemStatus? System);             // Admin, HR
+
+// ---- Organization (Admin, HR) ----------------------------------------------------------------
 
 public sealed record OrganizationSummary(
     int Headcount,
     int OnLeaveToday,
     int PendingApprovals,
-    IReadOnlyList<DepartmentHeadcount> HeadcountByDepartment);
+    IReadOnlyList<DepartmentHeadcount> HeadcountByDepartment,
+    int NewHiresThisMonth,
+    int LeaversThisYear,
+    AttendanceBreakdown AttendanceToday,
+    IReadOnlyList<LeaveTypeDays> LeaveDaysThisYear,
+    IReadOnlyList<LeaveRequestDto> PendingRequests,  // oldest first, the ones waiting longest
+    IReadOnlyList<LeaveRequestDto> UpcomingLeave,    // approved, today and the next 14 days
+    IReadOnlyList<ActivityItem> RecentActivity);     // latest job history entries
 
-public sealed record DepartmentHeadcount(Guid DepartmentId, string DepartmentName, int Headcount);
+public sealed record DepartmentHeadcount(Guid DepartmentId, string DepartmentName, int Headcount, string? ManagerName);
 
-public sealed record TeamSummary(int TeamSize, int PresentToday, int OnLeaveToday, int PendingApprovals);
+/// <summary>Active employees by today's state; the four numbers add up to the headcount.</summary>
+public sealed record AttendanceBreakdown(int CheckedOut, int Working, int OnLeave, int NotCheckedIn);
+
+/// <summary>Approved leave days starting this year. Every leave type is listed, 0 when unused.</summary>
+public sealed record LeaveTypeDays(LeaveType Type, decimal Days);
+
+public sealed record ActivityItem(
+    Guid EmployeeId,
+    string EmployeeName,
+    JobChangeType ChangeType,
+    DateOnly EffectiveDate,
+    string Position,
+    string DepartmentName,
+    string? Note);
+
+// ---- Team (Manager) --------------------------------------------------------------------------
+
+public sealed record TeamSummary(
+    int TeamSize,
+    int PresentToday,
+    int OnLeaveToday,
+    int PendingApprovals,
+    string DepartmentName,
+    AttendanceBreakdown AttendanceToday,
+    IReadOnlyList<TeamMemberToday> Members,
+    IReadOnlyList<LeaveRequestDto> PendingRequests,
+    IReadOnlyList<LeaveRequestDto> UpcomingLeave);
+
+public enum TodayStatus
+{
+    NotCheckedIn,
+    Working,
+    CheckedOut,
+    OnLeave,
+}
+
+public sealed record TeamMemberToday(
+    Guid EmployeeId,
+    string Name,
+    string Position,
+    TodayStatus Status,
+    DateTimeOffset? CheckInAt,
+    DateTimeOffset? CheckOutAt);
+
+// ---- Personal (anyone with an employee record) ------------------------------------------------
 
 public sealed record PersonalSummary(
     decimal AnnualLeaveBalance,
@@ -29,4 +87,39 @@ public sealed record PersonalSummary(
     int PendingRequests,
     DateTimeOffset? CheckedInAt,
     DateTimeOffset? CheckedOutAt,
-    IReadOnlyList<LeaveRequestDto> RecentRequests);
+    IReadOnlyList<LeaveRequestDto> RecentRequests,
+    MyProfile Profile,
+    IReadOnlyList<LeaveTypeDays> LeaveDaysThisYear,
+    LeaveRequestDto? NextLeave,          // approved leave that hasn't ended yet, the soonest
+    MonthAttendance AttendanceThisMonth);
+
+public sealed record MyProfile(
+    string EmployeeCode,
+    string Position,
+    string DepartmentName,
+    DateOnly HireDate,
+    int SkillsCount,
+    int QualificationsCount,
+    bool HasCv,
+    ActivityItem? LastChange);
+
+/// <param name="WorkingDaysSoFar">Monday–Friday from the 1st up to and including today.</param>
+/// <param name="HoursWorked">Completed days only (checked in and out).</param>
+public sealed record MonthAttendance(int DaysPresent, int WorkingDaysSoFar, double HoursWorked);
+
+// ---- Data quality (Admin, HR) ------------------------------------------------------------------
+
+public sealed record DataQualitySummary(
+    int ActiveEmployees,
+    int WithoutLogin,
+    int WithoutCv,
+    int WithoutSkills,
+    int WithoutQualifications,
+    int LockedAccounts,
+    IReadOnlyList<RoleCount> AccountsByRole,
+    IReadOnlyList<ProfileGap> NeedsAttention); // the active employees missing the most
+
+public sealed record RoleCount(string Role, int Count);
+
+/// <param name="Missing">Any of: login, CV, skills, education.</param>
+public sealed record ProfileGap(Guid EmployeeId, string EmployeeName, IReadOnlyList<string> Missing);

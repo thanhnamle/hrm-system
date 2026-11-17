@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.Configure<CompanyOptions>(configuration.GetSection(CompanyOptions.SectionName));
         services.AddSingleton<IClock, CompanyClock>();
+        services.AddSingleton<ISystemHealth, SystemHealth>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
 
