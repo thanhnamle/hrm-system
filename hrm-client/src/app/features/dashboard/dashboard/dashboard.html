@@ -1,52 +1,51 @@
 @if (summary.hasValue()) {
   @let s = summary.value();
-  <div class="space-y-8">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold">{{ greeting() }}</h1>
-        <p class="mt-1 text-sm text-muted">
-          {{ s.today | date: 'fullDate' }}
-          @if (!s.isWorkingDay) {
-            · Weekend
+  <!-- While a refresh runs the page keeps its frame (no flash), slightly dimmed. -->
+  <div
+    class="space-y-8 transition-opacity"
+    [class.opacity-70]="summary.isLoading()"
+    [attr.aria-busy]="summary.isLoading()"
+  >
+    <div class="flex flex-wrap items-center justify-end gap-3 text-sm">
+      @if (s.system; as system) {
+        <app-badge [tone]="health[system.status].tone">
+          {{
+            system.status === 'Healthy'
+              ? 'All systems operational'
+              : 'System ' + health[system.status].label.toLowerCase()
+          }}
+        </app-badge>
+      }
+      <span class="text-muted" aria-live="polite">
+        @if (summary.isLoading()) {
+          Refreshing…
+        } @else if (lastUpdated(); as at) {
+          Updated {{ at | date: 'HH:mm:ss' }}
+          @if (roundTripMs() !== null) {
+            · {{ roundTripMs() }} ms
           }
-        </p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-3 text-sm">
-        @if (s.system; as system) {
-          <app-badge [tone]="health[system.status].tone">
-            {{
-              system.status === 'Healthy'
-                ? 'All systems operational'
-                : 'System ' + health[system.status].label.toLowerCase()
-            }}
-          </app-badge>
         }
-        <span class="text-muted" aria-live="polite">
-          @if (summary.isLoading()) {
-            Refreshing…
-          } @else if (lastUpdated(); as at) {
-            Updated {{ at | date: 'HH:mm:ss' }}
-            @if (roundTripMs() !== null) {
-              · {{ roundTripMs() }} ms
-            }
-          }
-        </span>
-        <button
-          type="button"
-          class="btn-secondary px-3 py-1.5"
-          (click)="refresh()"
-          [disabled]="summary.isLoading()"
-        >
-          Refresh
-        </button>
-      </div>
-    </header>
+      </span>
+      <button
+        type="button"
+        class="btn-secondary px-3 py-1.5"
+        (click)="refresh()"
+        [disabled]="summary.isLoading()"
+      >
+        Refresh
+      </button>
+    </div>
+
+    @if (story(); as st) {
+      <app-story-banner [story]="st" [greeting]="greeting()" [today]="s.today" />
+    } @else {
+      <h1 class="text-2xl font-semibold">{{ greeting() }}</h1>
+    }
 
     @if (quickActions().length) {
-      <nav aria-label="Quick actions" class="flex flex-wrap gap-2">
+      <nav aria-label="Quick actions" class="reveal flex flex-wrap gap-2" style="--i: 1">
         @for (a of quickActions(); track a.link) {
-          <a [routerLink]="a.link" class="btn-secondary px-3 py-1.5">{{ a.label }}</a>
+          <a [routerLink]="a.link" class="btn-secondary lift px-3 py-1.5">{{ a.label }}</a>
         }
       </nav>
     }
@@ -77,7 +76,19 @@
     }
   </div>
 } @else if (summary.isLoading()) {
-  <app-loading label="Loading your dashboard…" />
+  <!-- Skeleton in the page's own shape, so nothing jumps when the data arrives. -->
+  <div class="space-y-8" role="status" aria-label="Loading your dashboard">
+    <div class="h-44 rounded-xl bg-border/60 motion-safe:animate-pulse"></div>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="h-32 rounded-lg bg-border/50 motion-safe:animate-pulse"></div>
+      }
+    </div>
+    <div class="grid gap-4 lg:grid-cols-3">
+      <div class="h-72 rounded-lg bg-border/50 motion-safe:animate-pulse lg:col-span-2"></div>
+      <div class="h-72 rounded-lg bg-border/50 motion-safe:animate-pulse"></div>
+    </div>
+  </div>
 } @else if (summary.error()) {
   <app-empty-state
     title="The dashboard could not be loaded"

@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { AttendanceBreakdown } from '../../../core/models/dashboard';
 import { LeaveRequest } from '../../../core/models/leave';
 import { Badge } from '../../../shared/ui/badge/badge';
+import { Sparkline } from '../charts/sparkline';
+import { CountUp } from './count-up';
 
 /**
  * Simple 24×24 line icons, drawn with the text colour. Path data only (circles and rectangles
@@ -57,25 +59,41 @@ export class Icon {
   protected readonly paths = computed(() => ICONS[this.name()]);
 }
 
-/** A number with a label, an icon and an optional line of context; a link when `link` is set. */
+/**
+ * A number with a label, an icon and a line of context; optionally a sparkline of its recent
+ * history (stat-tile contract: label · value · trend). The whole tile links to the detail page.
+ */
 @Component({
   selector: 'app-stat-tile',
-  imports: [RouterLink, Icon],
+  imports: [RouterLink, Icon, CountUp, Sparkline],
   template: `
     <a
       [routerLink]="link()"
-      class="card flex h-full items-start gap-4 p-5 transition-colors hover:border-brand-500"
+      class="card lift flex h-full flex-col gap-3 p-5 hover:border-brand-500"
     >
-      <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
-        <app-icon [name]="icon()" />
+      <span class="flex items-start gap-4">
+        <span
+          class="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"
+        >
+          <app-icon [name]="icon()" />
+        </span>
+        <span class="min-w-0">
+          <span class="block text-sm text-muted">{{ label() }}</span>
+          <span class="mt-0.5 block text-3xl font-semibold">
+            @if (isNumber(value())) {
+              <span [appCountUp]="$any(value())"></span>{{ suffix() }}
+            } @else {
+              {{ value() }}
+            }
+          </span>
+          @if (hint()) {
+            <span class="mt-1 block text-xs text-muted">{{ hint() }}</span>
+          }
+        </span>
       </span>
-      <span class="min-w-0">
-        <span class="block text-sm text-muted">{{ label() }}</span>
-        <span class="mt-0.5 block text-3xl font-semibold tabular-nums">{{ value() }}</span>
-        @if (hint()) {
-          <span class="mt-1 block text-xs text-muted">{{ hint() }}</span>
-        }
-      </span>
+      @if (trend().length > 1) {
+        <app-sparkline class="mt-auto" [values]="trend()" />
+      }
     </a>
   `,
 })
@@ -85,6 +103,11 @@ export class StatTile {
   readonly icon = input.required<IconName>();
   readonly link = input.required<string>();
   readonly hint = input<string>();
+  /** Shown after a numeric value, e.g. "%". */
+  readonly suffix = input('');
+  /** Recent history, oldest first; the last value should be the one shown. */
+  readonly trend = input<number[]>([]);
+  protected readonly isNumber = (v: unknown): v is number => typeof v === 'number';
 }
 
 /**

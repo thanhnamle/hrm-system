@@ -4,12 +4,14 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Permission, Permissions } from '../../../core/auth/permissions';
 import { Badge } from '../../../shared/ui/badge/badge';
-import { EmptyState, Loading } from '../../../shared/ui/states/states';
+import { EmptyState } from '../../../shared/ui/states/states';
 import { DashboardApi } from '../dashboard.api';
 import { OrganizationSection } from '../sections/organization-section';
 import { PersonalSection } from '../sections/personal-section';
 import { HEALTH, ReliabilitySection } from '../sections/reliability-section';
 import { TeamSection } from '../sections/team-section';
+import { organizationStory, personalStory, teamStory } from '../story';
+import { StoryBanner } from '../widgets/story-banner';
 
 /** Reload the numbers while the page is open, so "present today" and the health check stay current. */
 export const REFRESH_INTERVAL_MS = 60_000;
@@ -50,8 +52,8 @@ const QUICK_ACTIONS: QuickAction[] = [
     DatePipe,
     RouterLink,
     Badge,
-    Loading,
     EmptyState,
+    StoryBanner,
     OrganizationSection,
     TeamSection,
     PersonalSection,
@@ -76,6 +78,20 @@ export class Dashboard {
     const hour = new Date().getHours();
     const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     return `${part}, ${name}`;
+  });
+
+  /** The banner tells the widest story the user can see: organization, else team, else their own. */
+  protected readonly story = computed(() => {
+    if (!this.summary.hasValue()) return null;
+    const s = this.summary.value();
+    return (
+      organizationStory(s) ??
+      (s.team
+        ? teamStory(s.team, s.today, s.isWorkingDay)
+        : s.personal
+          ? personalStory(s.personal, s.today, s.isWorkingDay)
+          : null)
+    );
   });
 
   protected readonly quickActions = computed(() => {

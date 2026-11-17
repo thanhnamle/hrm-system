@@ -3,7 +3,10 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PersonalSummary } from '../../../core/models/dashboard';
 import { Badge, humanize } from '../../../shared/ui/badge/badge';
+import { Column, ColumnChart } from '../charts/column-chart';
+import { dayLabel, hoursInsight } from '../story';
 import { BarList, BarRow, Icon, Meter } from '../widgets/widgets';
+import { BRAND_SERIES } from './organization-section';
 
 /** "2 years 3 months", "5 months", "Joined this month". */
 export function tenure(hireDate: string, today: string): string {
@@ -23,7 +26,7 @@ export function tenure(hireDate: string, today: string): string {
 @Component({
   selector: 'app-personal-section',
   host: { class: 'block' }, // custom elements are inline; block so the page spacing applies
-  imports: [DatePipe, DecimalPipe, RouterLink, Badge, BarList, Icon, Meter],
+  imports: [DatePipe, DecimalPipe, RouterLink, Badge, BarList, Icon, Meter, ColumnChart],
   templateUrl: './personal-section.html',
 })
 export class PersonalSection {
@@ -61,4 +64,22 @@ export class PersonalSection {
   });
 
   protected readonly humanize = humanize;
+
+  protected readonly hourSeries = BRAND_SERIES('hours', 'Hours');
+  protected readonly hoursFormat = (v: number) => `${Math.round(v * 10) / 10} h`;
+  protected readonly hours = computed(() => hoursInsight(this.me().hoursByWeek));
+
+  protected readonly hourColumns = computed<Column[]>(() => {
+    const weeks = this.me().hoursByWeek;
+    return weeks.map((w, i) => ({
+      key: w.weekStart,
+      label: dayLabel(w.weekStart),
+      values: { hours: w.hours },
+      detail: [
+        `${w.daysPresent} day(s) present`,
+        ...(i === weeks.length - 1 ? ['This week, so far'] : []),
+      ],
+      highlight: i === weeks.length - 1,
+    }));
+  });
 }

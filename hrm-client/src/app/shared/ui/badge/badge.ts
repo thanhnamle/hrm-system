@@ -41,7 +41,7 @@ export const humanize = (value: string): string =>
   selector: 'app-badge',
   template: `
     <span
-      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset"
+      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset"
       [class]="classes()"
     >
       @if (status(); as s) {

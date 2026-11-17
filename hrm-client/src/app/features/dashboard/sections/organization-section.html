@@ -6,22 +6,28 @@
 
   <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <app-stat-tile
+      class="reveal"
+      style="--i: 1"
       label="Active employees"
       icon="users"
       link="/employees"
       [value]="o.headcount"
       [hint]="headcountHint()"
+      [trend]="headcountSpark()"
     />
     <app-stat-tile
+      class="reveal"
+      style="--i: 2"
       label="Present today"
       icon="clock"
       link="/attendance/team"
       [value]="present()"
-      [hint]="
-        isWorkingDay() ? presentPercent() + '% of active employees checked in' : 'Weekend today'
-      "
+      [hint]="isWorkingDay() ? presentPercent() + '% of active employees' : 'Weekend today'"
+      [trend]="attendanceSpark()"
     />
     <app-stat-tile
+      class="reveal"
+      style="--i: 3"
       label="On leave today"
       icon="calendar"
       link="/leave/approvals"
@@ -29,6 +35,8 @@
       [hint]="o.upcomingLeave.length + ' away in the next 14 days'"
     />
     <app-stat-tile
+      class="reveal"
+      style="--i: 4"
       label="Leave requests to review"
       icon="inbox"
       link="/leave/approvals"
@@ -37,10 +45,24 @@
     />
   </div>
 
-  <div class="grid gap-4 lg:grid-cols-2">
-    <div class="card">
+  <!-- Attendance: the trend, then today -->
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="card reveal lg:col-span-2" style="--i: 5">
+      <h3 class="font-semibold">{{ attendance().title }}</h3>
+      <p class="mt-0.5 text-xs text-muted">{{ attendance().subtitle }}</p>
+      <app-trend-chart
+        class="mt-4"
+        [points]="attendancePoints()"
+        [max]="100"
+        [format]="percent"
+        valueLabel="attendance"
+        [ariaLabel]="attendance().title"
+      />
+    </div>
+
+    <div class="card reveal flex flex-col" style="--i: 6">
       <div class="mb-4 flex items-baseline justify-between gap-2">
-        <h3 class="font-semibold">Attendance today</h3>
+        <h3 class="font-semibold">Today</h3>
         <a routerLink="/attendance/team" class="text-sm text-brand-700 hover:underline"
           >Team view →</a
         >
@@ -49,21 +71,46 @@
       @if (!isWorkingDay()) {
         <p class="mt-3 text-xs text-muted">It's the weekend: nobody is expected to check in.</p>
       }
-    </div>
-
-    <div class="card">
-      <div class="mb-4 flex items-baseline justify-between gap-2">
-        <h3 class="font-semibold">Active employees by department</h3>
-        <a routerLink="/departments" class="text-sm text-brand-700 hover:underline"
-          >Departments →</a
-        >
-      </div>
-      <app-bar-list [rows]="departments()" unit="active employee(s)" />
+      <h4 class="mt-6 text-sm font-medium">Who's away</h4>
+      <p class="text-xs text-muted">Approved leave today and in the next 14 days.</p>
+      <app-leave-list
+        [requests]="o.upcomingLeave"
+        [today]="today()"
+        emptyText="Nobody is away in the next two weeks."
+      />
     </div>
   </div>
 
+  <!-- Leave and headcount over time -->
   <div class="grid gap-4 lg:grid-cols-2">
-    <div class="card">
+    <div class="card reveal" style="--i: 7">
+      <h3 class="font-semibold">{{ leave().title }}</h3>
+      <p class="mt-0.5 text-xs text-muted">{{ leave().subtitle }}</p>
+      <app-column-chart
+        class="mt-4"
+        [columns]="leaveColumns()"
+        [series]="leaveSeries"
+        categoryLabel="Month"
+        [ariaLabel]="leave().title + '. Approved leave days by month and type.'"
+      />
+    </div>
+
+    <div class="card reveal" style="--i: 8">
+      <h3 class="font-semibold">{{ headcount().title }}</h3>
+      <p class="mt-0.5 text-xs text-muted">{{ headcount().subtitle }}</p>
+      <app-column-chart
+        class="mt-4"
+        [columns]="headcountColumns()"
+        [series]="headcountSeries"
+        categoryLabel="Month"
+        [ariaLabel]="headcount().title"
+      />
+    </div>
+  </div>
+
+  <!-- What needs a decision, and what changed -->
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="card reveal" style="--i: 9">
       <div class="mb-1 flex items-baseline justify-between gap-2">
         <h3 class="font-semibold">Waiting for approval</h3>
         <a routerLink="/leave/approvals" class="text-sm text-brand-700 hover:underline"
@@ -79,27 +126,7 @@
       />
     </div>
 
-    <div class="card">
-      <h3 class="mb-1 font-semibold">Who's away</h3>
-      <p class="text-xs text-muted">Approved leave today and in the next 14 days.</p>
-      <app-leave-list
-        [requests]="o.upcomingLeave"
-        [today]="today()"
-        emptyText="Nobody is away in the next two weeks."
-      />
-    </div>
-  </div>
-
-  <div class="grid gap-4 lg:grid-cols-2">
-    <div class="card">
-      <div class="mb-4 flex items-baseline justify-between gap-2">
-        <h3 class="font-semibold">Leave taken this year</h3>
-        <span class="text-sm text-muted tabular-nums">{{ totalLeaveDays() }} day(s) approved</span>
-      </div>
-      <app-bar-list [rows]="leaveDays()" unit="day(s)" />
-    </div>
-
-    <div class="card">
+    <div class="card reveal" style="--i: 10">
       <h3 class="mb-1 font-semibold">Recent job changes</h3>
       <p class="text-xs text-muted">Hires, promotions, transfers and leavers.</p>
       @if (o.recentActivity.length) {
@@ -132,5 +159,14 @@
         <p class="py-4 text-sm text-muted">No changes recorded yet.</p>
       }
     </div>
+  </div>
+
+  <div class="card reveal" style="--i: 11">
+    <div class="mb-1 flex items-baseline justify-between gap-2">
+      <h3 class="font-semibold">{{ largestDepartment() ?? 'Active employees by department' }}</h3>
+      <a routerLink="/departments" class="text-sm text-brand-700 hover:underline">Departments →</a>
+    </div>
+    <p class="mb-4 text-xs text-muted">Active employees per department, with its manager.</p>
+    <app-bar-list [rows]="departments()" unit="active employee(s)" />
   </div>
 </section>

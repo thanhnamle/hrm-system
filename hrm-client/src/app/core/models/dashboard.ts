@@ -56,6 +56,40 @@ export interface OrganizationSummary {
   pendingRequests: LeaveRequest[]; // oldest first
   upcomingLeave: LeaveRequest[]; // approved, today and the next 14 days
   recentActivity: ActivityItem[];
+  attendanceTrend: DailyAttendance[]; // working days of the last 30 days, oldest first
+  headcountTrend: MonthHeadcount[]; // the last 12 months, oldest first
+  leaveByMonth: MonthLeave[]; // approved leave days, 6 months back to 2 ahead
+}
+
+/** `expected` = people employed that day, so the attendance rate is present / expected. */
+export interface DailyAttendance {
+  date: IsoDate;
+  present: number;
+  onLeave: number;
+  expected: number;
+}
+
+/** `month` is the first day of the month; `headcount` is at the month's end (today for this month). */
+export interface MonthHeadcount {
+  month: IsoDate;
+  headcount: number;
+  hires: number;
+  leavers: number;
+}
+
+/** Approved leave days by the month the leave starts in. */
+export interface MonthLeave {
+  month: IsoDate;
+  annual: number;
+  sick: number;
+  unpaid: number;
+}
+
+/** Monday-start week; hours count completed days only. */
+export interface WeekHours {
+  weekStart: IsoDate;
+  hours: number;
+  daysPresent: number;
 }
 
 export type TodayStatus = 'NotCheckedIn' | 'Working' | 'CheckedOut' | 'OnLeave';
@@ -79,6 +113,7 @@ export interface TeamSummary {
   members: TeamMemberToday[];
   pendingRequests: LeaveRequest[];
   upcomingLeave: LeaveRequest[];
+  attendanceTrend: DailyAttendance[];
 }
 
 export interface PersonalSummary {
@@ -101,6 +136,7 @@ export interface PersonalSummary {
   leaveDaysThisYear: LeaveTypeDays[];
   nextLeave: LeaveRequest | null;
   attendanceThisMonth: { daysPresent: number; workingDaysSoFar: number; hoursWorked: number };
+  hoursByWeek: WeekHours[]; // the last 8 weeks, oldest first
 }
 
 export interface DataQualitySummary {

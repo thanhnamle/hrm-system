@@ -102,3 +102,77 @@
     @apply bg-canvas;
   }
 }
+
+/*
+ * Motion. Short and purposeful: content arrives in reading order, charts draw from their baseline.
+ * Everything here switches off for people who ask their OS for reduced motion.
+ */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes chart-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes chart-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Staggered entrance: set --i (0, 1, 2…) to delay each item a little more than the last. */
+.reveal {
+  animation: reveal 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+/* A line drawn from left to right; the path needs pathLength="1". */
+.chart-draw {
+  stroke-dasharray: 1;
+  animation: chart-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+/* Columns rise from the baseline. */
+.chart-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: chart-grow 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.chart-fade {
+  animation: chart-fade 900ms ease-out both;
+}
+/* Cards that are links lift a little on hover, so it's clear they can be opened. */
+.lift {
+  transition:
+    transform 150ms ease-out,
+    box-shadow 150ms ease-out,
+    border-color 150ms ease-out;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .chart-draw,
+  .chart-grow,
+  .chart-fade {
+    animation: none;
+  }
+  .lift,
+  .lift:hover {
+    transition: none;
+    transform: none;
+  }
+}

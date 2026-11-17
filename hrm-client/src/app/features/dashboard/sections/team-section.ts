@@ -1,8 +1,10 @@
 import { DatePipe } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TeamSummary, TodayStatus } from '../../../core/models/dashboard';
 import { Badge, BadgeTone } from '../../../shared/ui/badge/badge';
+import { TrendChart, TrendPoint } from '../charts/trend-chart';
+import { attendanceInsight, attendanceRate, dayLabel, pct } from '../story';
 import { AttendanceBar, LeaveList, StatTile } from '../widgets/widgets';
 
 /** Same colours as the attendance bar legend. */
@@ -17,7 +19,7 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
 @Component({
   selector: 'app-team-section',
   host: { class: 'block' }, // custom elements are inline; block so the page spacing applies
-  imports: [DatePipe, RouterLink, Badge, StatTile, AttendanceBar, LeaveList],
+  imports: [DatePipe, RouterLink, Badge, StatTile, AttendanceBar, LeaveList, TrendChart],
   template: `
     @let t = team();
     <section class="space-y-4" aria-labelledby="team-heading">
@@ -26,8 +28,18 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
       </h2>
 
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <app-stat-tile label="Team members" icon="users" link="/employees" [value]="t.teamSize" />
         <app-stat-tile
+          class="reveal"
+          style="--i: 1"
+          label="Team members"
+          icon="users"
+          link="/employees"
+          [value]="t.teamSize"
+        />
+        <app-stat-tile
+          class="reveal"
+          style="--i: 2"
+          [trend]="attendanceSpark()"
           label="Checked in today"
           icon="clock"
           link="/attendance/team"
@@ -35,6 +47,8 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
           [hint]="isWorkingDay() ? 'of ' + t.teamSize + ' team members' : 'Weekend today'"
         />
         <app-stat-tile
+          class="reveal"
+          style="--i: 3"
           label="On leave today"
           icon="calendar"
           link="/attendance/team"
@@ -42,6 +56,8 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
           [hint]="t.upcomingLeave.length + ' away in the next 14 days'"
         />
         <app-stat-tile
+          class="reveal"
+          style="--i: 4"
           label="Requests to review"
           icon="inbox"
           link="/leave/approvals"
@@ -50,8 +66,21 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
         />
       </div>
 
+      <div class="card reveal" style="--i: 5">
+        <h3 class="font-semibold">{{ attendance().title }}</h3>
+        <p class="mt-0.5 text-xs text-muted">{{ attendance().subtitle }}</p>
+        <app-trend-chart
+          class="mt-4"
+          [points]="attendancePoints()"
+          [max]="100"
+          [format]="percent"
+          valueLabel="attendance"
+          [ariaLabel]="attendance().title"
+        />
+      </div>
+
       <div class="grid gap-4 lg:grid-cols-5">
-        <div class="card lg:col-span-3">
+        <div class="card reveal lg:col-span-3" style="--i: 6">
           <div class="mb-4 flex items-baseline justify-between gap-2">
             <h3 class="font-semibold">Team today</h3>
             <a routerLink="/attendance/team" class="text-sm text-brand-700 hover:underline"
@@ -86,7 +115,7 @@ const STATUS: Record<TodayStatus, { label: string; tone: BadgeTone }> = {
           </ul>
         </div>
 
-        <div class="space-y-4 lg:col-span-2">
+        <div class="reveal space-y-4 lg:col-span-2" style="--i: 7">
           <div class="card">
             <h3 class="mb-1 font-semibold">Waiting for you</h3>
             <p class="text-xs text-muted">Oldest requests first.</p>
@@ -116,4 +145,22 @@ export class TeamSection {
   readonly today = input.required<string>();
   readonly isWorkingDay = input.required<boolean>();
   protected readonly status = STATUS;
+  protected readonly percent = (v: number) => pct(v);
+
+  protected readonly attendance = computed(() =>
+    attendanceInsight(this.team().attendanceTrend, this.today()),
+  );
+
+  protected readonly attendancePoints = computed<TrendPoint[]>(() =>
+    this.team().attendanceTrend.map((d) => ({
+      key: d.date,
+      label: d.date === this.today() ? `${dayLabel(d.date)} (today, so far)` : dayLabel(d.date),
+      value: attendanceRate(d),
+      detail: [`${d.present} of ${d.expected} in`, ...(d.onLeave ? [`${d.onLeave} on leave`] : [])],
+    })),
+  );
+
+  protected readonly attendanceSpark = computed(() =>
+    this.team().attendanceTrend.slice(-12).map(attendanceRate),
+  );
 }

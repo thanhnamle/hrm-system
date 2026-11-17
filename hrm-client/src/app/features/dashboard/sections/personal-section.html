@@ -4,7 +4,7 @@
 
   <div class="grid gap-4 lg:grid-cols-3">
     <!-- Profile -->
-    <div class="card flex flex-col">
+    <div class="card reveal flex flex-col" style="--i: 1">
       <div class="flex items-start gap-3">
         <span
           class="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Leave -->
-    <div class="card flex flex-col">
+    <div class="card reveal flex flex-col" style="--i: 2">
       <p class="text-sm text-muted">Annual leave available</p>
       <p class="mt-0.5 text-3xl font-semibold tabular-nums">{{ available() | number: '1.0-1' }}</p>
       <p class="text-xs text-muted">
@@ -89,7 +89,7 @@
     </div>
 
     <!-- Attendance -->
-    <div class="card flex flex-col">
+    <div class="card reveal flex flex-col" style="--i: 3">
       <p class="text-sm text-muted">Today</p>
       @if (m.checkedOutAt) {
         <p class="mt-0.5 text-xl font-semibold">
@@ -122,8 +122,23 @@
     </div>
   </div>
 
+  <!-- Hours over the last weeks -->
+  <div class="card reveal" style="--i: 4">
+    <h3 class="font-semibold">{{ hours().title }}</h3>
+    <p class="mt-0.5 text-xs text-muted">{{ hours().subtitle }}</p>
+    <app-column-chart
+      class="mt-4"
+      [columns]="hourColumns()"
+      [series]="hourSeries"
+      [height]="180"
+      [format]="hoursFormat"
+      categoryLabel="Week of"
+      [ariaLabel]="hours().title"
+    />
+  </div>
+
   <!-- Recent requests -->
-  <div class="card">
+  <div class="card reveal" style="--i: 5">
     <div class="mb-2 flex items-baseline justify-between gap-2">
       <h3 class="font-semibold">My recent leave requests</h3>
       <a routerLink="/leave" class="text-sm text-brand-700 hover:underline">All my requests →</a>
