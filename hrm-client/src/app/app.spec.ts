@@ -66,7 +66,12 @@ describe('App', () => {
     const labels = [...page.querySelectorAll('app-sidebar nav a')].map((a) =>
       a.textContent?.trim(),
     );
-    expect(labels).toEqual(['HRM', 'Dashboard', 'Employees', 'My leave']);
+    expect(labels).toEqual(['Dashboard', 'Employees', 'My leave']);
+    // Groups without any allowed item (Attendance, Administration) are not shown at all.
+    const groups = [...page.querySelectorAll('app-sidebar nav p')].map((p) =>
+      p.textContent?.trim(),
+    );
+    expect(groups).toEqual(['Overview', 'People', 'Time off']);
   });
 
   it('sends a role without the permission to /forbidden', async () => {

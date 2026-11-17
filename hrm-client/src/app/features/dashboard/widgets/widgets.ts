@@ -4,60 +4,12 @@ import { RouterLink } from '@angular/router';
 import { AttendanceBreakdown } from '../../../core/models/dashboard';
 import { LeaveRequest } from '../../../core/models/leave';
 import { Badge } from '../../../shared/ui/badge/badge';
+import { Icon, IconName } from '../../../shared/ui/icon/icon';
 import { Sparkline } from '../charts/sparkline';
 import { CountUp } from './count-up';
 
-/**
- * Simple 24×24 line icons, drawn with the text colour. Path data only (circles and rectangles
- * written as paths): rendered as real <path> elements, because Angular's sanitizer would strip
- * SVG shapes inserted through innerHTML.
- */
-const ICONS = {
-  users: [
-    'M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0',
-    'M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5',
-    'M14.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
-    'M17 14c2.8 0 4.5 2 4.5 5',
-  ],
-  clock: ['M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', 'M12 7v5l3 2'],
-  calendar: [
-    'M5.5 5h13a2 2 0 0 1 2 2v11a2 2 0 0 1 -2 2h-13a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2z',
-    'M3.5 10h17M8 3v4M16 3v4',
-  ],
-  inbox: ['M4 13 6 5h12l2 8v6H4z', 'M4 13h5l1 2h4l1-2h5'],
-  shield: ['M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z', 'm9 12 2 2 4-4'],
-  pulse: ['M3 12h4l2-5 4 10 2-5h6'],
-  building: [
-    'M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1v-16a1 1 0 0 1 1 -1z',
-    'M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2',
-  ],
-  file: ['M7 3h7l5 5v13H7z', 'M14 3v5h5'],
-  user: ['M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0', 'M4.5 21c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5'],
-} as const;
-
-export type IconName = keyof typeof ICONS;
-
-@Component({
-  selector: 'app-icon',
-  template: `<svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="size-5"
-    aria-hidden="true"
-  >
-    @for (d of paths(); track $index) {
-      <path [attr.d]="d" />
-    }
-  </svg>`,
-})
-export class Icon {
-  readonly name = input.required<IconName>();
-  protected readonly paths = computed(() => ICONS[this.name()]);
-}
+// The icon set lives in shared/ui so the layout (sidebar, top bar) can use it too.
+export { Icon, type IconName } from '../../../shared/ui/icon/icon';
 
 /**
  * A number with a label, an icon and a line of context; optionally a sparkline of its recent

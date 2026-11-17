@@ -1,14 +1,102 @@
-<header class="flex h-14 items-center justify-between border-b border-border bg-surface px-6">
-  <span class="text-sm text-muted">HR Management System</span>
+<header
+  class="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-border bg-surface/90 px-4 backdrop-blur sm:px-6"
+>
+  <div class="flex min-w-0 items-center gap-3">
+    <button
+      type="button"
+      class="btn-ghost -ml-2 p-2 lg:hidden"
+      aria-label="Open menu"
+      aria-controls="app-sidebar"
+      [attr.aria-expanded]="layout.navOpen()"
+      (click)="layout.navOpen.set(true)"
+    >
+      <app-icon name="menu" />
+    </button>
+    <div class="min-w-0">
+      <p class="truncate text-base font-semibold text-ink">{{ layout.title() }}</p>
+      <p class="hidden text-xs text-muted sm:block">{{ today | date: 'EEEE, MMMM d, y' }}</p>
+    </div>
+  </div>
 
-  @if (auth.user(); as user) {
-    <div class="flex items-center gap-4">
-      <div class="text-right leading-tight">
-        <p class="text-sm font-medium">{{ user.fullName ?? user.email }}</p>
-        <p class="text-xs text-muted">{{ user.role }}</p>
-      </div>
-      <a routerLink="/account/password" class="btn-ghost" routerLinkActive="text-ink">Password</a>
-      <button type="button" class="btn-ghost" (click)="auth.logout()">Sign out</button>
+  @if (user(); as u) {
+    <div class="relative">
+      <button
+        #menuButton
+        type="button"
+        class="flex items-center gap-3 rounded-lg py-1.5 pr-2 pl-1.5 transition-colors hover:bg-canvas"
+        aria-haspopup="menu"
+        aria-controls="account-menu"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu()"
+        (keydown.arrowDown)="openMenuAt(0, $event)"
+        (keydown.arrowUp)="openMenuAt(-1, $event)"
+      >
+        <span
+          class="grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-semibold text-white"
+          aria-hidden="true"
+          >{{ u.initials }}</span
+        >
+        <span class="hidden text-left leading-tight sm:block">
+          <span class="block max-w-48 truncate text-sm font-medium text-ink">{{ u.name }}</span>
+          <span class="block text-xs text-muted">{{ u.role }}</span>
+        </span>
+        <app-icon
+          name="chevronDown"
+          size="size-4"
+          class="text-muted transition-transform"
+          [class.rotate-180]="menuOpen()"
+        />
+        <span class="sr-only">Account menu</span>
+      </button>
+
+      @if (menuOpen()) {
+        <div
+          id="account-menu"
+          role="menu"
+          tabindex="-1"
+          aria-label="Account"
+          class="menu-pop absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
+          (keydown)="menuKey($event, menuButton)"
+        >
+          <div class="border-b border-border px-4 py-3" role="none">
+            <p class="truncate text-sm font-medium text-ink">{{ u.name }}</p>
+            <p class="truncate text-xs text-muted">{{ u.email }}</p>
+          </div>
+          @if (u.employeeId) {
+            <a
+              #menuItem
+              role="menuitem"
+              tabindex="-1"
+              [routerLink]="['/employees', u.employeeId]"
+              (click)="closeMenu()"
+              class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink outline-none hover:bg-canvas focus:bg-canvas"
+            >
+              <app-icon name="user" size="size-4" class="text-muted" /> My profile
+            </a>
+          }
+          <a
+            #menuItem
+            role="menuitem"
+            tabindex="-1"
+            routerLink="/account/password"
+            (click)="closeMenu()"
+            class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink outline-none hover:bg-canvas focus:bg-canvas"
+          >
+            <app-icon name="lock" size="size-4" class="text-muted" /> Change password
+          </a>
+          <div class="my-1 border-t border-border" role="separator"></div>
+          <button
+            #menuItem
+            type="button"
+            role="menuitem"
+            tabindex="-1"
+            (click)="signOut()"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-danger outline-none hover:bg-danger/5 focus:bg-danger/5"
+          >
+            <app-icon name="logout" size="size-4" /> Sign out
+          </button>
+        </div>
+      }
     </div>
   }
 </header>

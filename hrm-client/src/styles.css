@@ -151,6 +151,17 @@
 .chart-fade {
   animation: chart-fade 900ms ease-out both;
 }
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+/* Dropdown menus open with a short fade and drop. */
+.menu-pop {
+  transform-origin: top right;
+  animation: menu-pop 140ms ease-out both;
+}
 /* Cards that are links lift a little on hover, so it's clear they can be opened. */
 .lift {
   transition:
@@ -165,6 +176,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
+  .menu-pop,
   .chart-draw,
   .chart-grow,
   .chart-fade {

@@ -1,13 +1,85 @@
-<nav aria-label="Main" class="flex h-full flex-col gap-1 p-3">
-  <a routerLink="/dashboard" class="mb-4 px-3 py-2 text-lg font-semibold text-brand-700">HRM</a>
-  @for (item of items(); track item.route) {
-    <a
-      [routerLink]="item.route"
-      routerLinkActive="bg-brand-50 text-brand-700 font-medium"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="rounded-md px-3 py-2 text-sm text-ink hover:bg-canvas"
+<!-- Brand -->
+<div class="flex h-16 shrink-0 items-center justify-between gap-2 px-5">
+  <a routerLink="/dashboard" class="flex items-center gap-2.5" aria-label="HRM home">
+    <span
+      class="grid size-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-sm"
+      aria-hidden="true"
+      >H</span
     >
-      {{ item.label }}
-    </a>
+    <span class="leading-tight">
+      <span class="block text-base font-semibold text-ink">HRM</span>
+      <span class="block text-[11px] text-muted">People and time</span>
+    </span>
+  </a>
+  <!-- Close button for the drawer on small screens -->
+  <button
+    type="button"
+    class="btn-ghost p-2 lg:hidden"
+    aria-label="Close menu"
+    (click)="layout.navOpen.set(false)"
+  >
+    <app-icon name="close" />
+  </button>
+</div>
+
+<!-- Navigation -->
+<nav aria-label="Main" class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+  @for (group of groups(); track group.label) {
+    <div>
+      <p class="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted uppercase">
+        {{ group.label }}
+      </p>
+      <ul class="space-y-0.5">
+        @for (item of group.items; track item.route) {
+          <li>
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="nav-active"
+              #rla="routerLinkActive"
+              [routerLinkActiveOptions]="{ exact: !!item.exact }"
+              [attr.aria-current]="rla.isActive ? 'page' : null"
+              class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-canvas [&.nav-active]:bg-brand-50 [&.nav-active]:font-medium [&.nav-active]:text-brand-700"
+            >
+              <span
+                class="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-brand-600 opacity-0 transition-opacity group-[.nav-active]:opacity-100"
+                aria-hidden="true"
+              ></span>
+              <app-icon
+                [name]="item.icon"
+                class="text-muted transition-colors group-hover:text-ink group-[.nav-active]:text-brand-600"
+              />
+              <span class="flex-1">{{ item.label }}</span>
+              @if (badge(item); as count) {
+                <span
+                  class="min-w-5 rounded-full bg-brand-600 px-1.5 py-0.5 text-center text-[11px] leading-none font-semibold text-white"
+                  [attr.aria-label]="count + ' waiting'"
+                  >{{ count }}</span
+                >
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
   }
 </nav>
+
+<!-- Signed-in user -->
+@if (user(); as u) {
+  <div class="shrink-0 border-t border-border p-3">
+    <a
+      [routerLink]="u.employeeId ? ['/employees', u.employeeId] : '/account/password'"
+      class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-canvas"
+    >
+      <span
+        class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700"
+        aria-hidden="true"
+        >{{ u.initials }}</span
+      >
+      <span class="min-w-0 leading-tight">
+        <span class="block truncate text-sm font-medium text-ink">{{ u.name }}</span>
+        <span class="block text-xs text-muted">{{ u.role }}</span>
+      </span>
+    </a>
+  </div>
+}

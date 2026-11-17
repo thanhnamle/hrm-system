@@ -1,10 +1,25 @@
-<div class="flex min-h-screen">
-  <aside class="w-60 shrink-0 border-r border-border bg-surface">
+<div class="min-h-screen lg:flex">
+  <!-- Backdrop behind the drawer on small screens -->
+  @if (layout.navOpen()) {
+    <div
+      class="fixed inset-0 z-30 bg-ink/40 backdrop-blur-[1px] lg:hidden"
+      aria-hidden="true"
+      (click)="layout.navOpen.set(false)"
+    ></div>
+  }
+
+  <aside
+    id="app-sidebar"
+    class="fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface shadow-xl transition-[translate,visibility] duration-200 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none lg:visible"
+    [class.-translate-x-full]="!layout.navOpen()"
+    [class.invisible]="!layout.navOpen()"
+  >
     <app-sidebar />
   </aside>
+
   <div class="flex min-w-0 flex-1 flex-col">
     <app-topbar />
-    <main class="flex-1 p-6">
+    <main class="flex-1 p-4 sm:p-6">
       <router-outlet />
     </main>
   </div>
