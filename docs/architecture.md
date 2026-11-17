@@ -169,8 +169,12 @@ hrm-client/src/app/
 
 **Dashboard by role**
 
-| Role | Widgets |
+One call (`GET /api/dashboard`); the API fills only the sections the role gets. The page reloads it every minute and shows when it last updated and how long the call took.
+
+| Role | Sections |
 |---|---|
-| Admin / HR | Headcount, headcount by department, on leave today, pending approvals |
-| Manager | Team size, pending approvals, team attendance today |
-| Employee | Leave balance, my recent requests, today's check-in status |
+| Admin / HR | **Organization:** headcount with hires/leavers, present today, on leave, approvals waiting; attendance today as a segmented bar; headcount by department with managers; oldest pending requests; who's away in the next 14 days; leave days by type this year; recent job changes. **Reliability:** system status (database health check with timings, API round trip from the browser, uptime, version) and data quality (logins, CVs, skills, education, locked accounts, accounts by role, who needs attention) |
+| Manager | **My team:** team size, checked in, on leave, requests to review; each member's status today with times; pending requests; upcoming team leave |
+| Anyone with an employee record | **Me:** position, department, tenure, profile completeness, last job change; annual leave available, leave taken this year, next leave; today's check-in and days present / hours this month; recent requests |
+
+The system status comes from `ISystemHealth` (Application interface, implemented in Infrastructure with ASP.NET Core's `HealthCheckService`), so the dashboard stays a normal MediatR query and needs no new permission.

@@ -90,7 +90,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 | GET / POST | `/api/users` | `Users.Manage` | list; create the login for an employee |
 | PUT | `/api/users/{id}/role` | `Users.Manage` | not your own; revokes the user's sessions |
 | POST | `/api/users/{id}/lock`, `/unlock`, `/reset-password` | `Users.Manage` | cannot lock yourself; lock and reset revoke sessions |
-| GET | `/api/dashboard` | Authenticated | role-dependent content |
+| GET | `/api/dashboard` | Authenticated | role-dependent sections: `organization`, `dataQuality`, `system` (Admin/HR), `team` (Manager), `personal` (has an employee record) |
 
 **Employee profile**
 - **Job history** is written by the `Employee` aggregate itself: `Hire` adds *Hired*, `ChangeJob` adds *Transferred* (new department) or *PositionChanged* (same department, new position), `Terminate` adds *Terminated*. `PUT /api/employees/{id}` takes an optional `changeNote` (e.g. "Promotion") that is stored on the entry. Nothing is recorded when the job doesn't change.
