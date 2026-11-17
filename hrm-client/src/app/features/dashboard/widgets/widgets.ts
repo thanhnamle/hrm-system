@@ -8,9 +8,6 @@ import { Icon, IconName } from '../../../shared/ui/icon/icon';
 import { Sparkline } from '../charts/sparkline';
 import { CountUp } from './count-up';
 
-// The icon set lives in shared/ui so the layout (sidebar, top bar) can use it too.
-export { Icon, type IconName } from '../../../shared/ui/icon/icon';
-
 /**
  * A number with a label, an icon and a line of context; optionally a sparkline of its recent
  * history (stat-tile contract: label · value · trend). The whole tile links to the detail page.

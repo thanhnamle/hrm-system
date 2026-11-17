@@ -8,7 +8,7 @@ import {
   WeekHours,
 } from '../../core/models/dashboard';
 import { LeaveRequest } from '../../core/models/leave';
-import type { IconName } from './widgets/widgets';
+import type { IconName } from '../../shared/ui/icon/icon';
 
 /**
  * Data storytelling: turns the dashboard numbers into sentences. Chart titles state the takeaway

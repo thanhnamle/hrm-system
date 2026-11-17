@@ -3,7 +3,7 @@ import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Story, Tone } from '../story';
 import { CountUp } from './count-up';
-import { Icon } from './widgets';
+import { Icon } from '../../../shared/ui/icon/icon';
 
 const TONE_DOT: Record<Tone, string> = {
   good: 'bg-success',

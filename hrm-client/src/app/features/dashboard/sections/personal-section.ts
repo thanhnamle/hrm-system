@@ -5,7 +5,8 @@ import { PersonalSummary } from '../../../core/models/dashboard';
 import { Badge, humanize } from '../../../shared/ui/badge/badge';
 import { Column, ColumnChart } from '../charts/column-chart';
 import { dayLabel, hoursInsight } from '../story';
-import { BarList, BarRow, Icon, Meter } from '../widgets/widgets';
+import { Icon } from '../../../shared/ui/icon/icon';
+import { BarList, BarRow, Meter } from '../widgets/widgets';
 import { BRAND_SERIES } from './organization-section';
 
 /** "2 years 3 months", "5 months", "Joined this month". */

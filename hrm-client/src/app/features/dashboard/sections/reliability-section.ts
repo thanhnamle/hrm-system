@@ -3,7 +3,8 @@ import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DataQualitySummary, HealthStatus, SystemStatus } from '../../../core/models/dashboard';
 import { Badge, BadgeTone } from '../../../shared/ui/badge/badge';
-import { Icon, Meter } from '../widgets/widgets';
+import { Icon } from '../../../shared/ui/icon/icon';
+import { Meter } from '../widgets/widgets';
 
 export const HEALTH: Record<HealthStatus, { label: string; tone: BadgeTone }> = {
   Healthy: { label: 'Operational', tone: 'success' },
