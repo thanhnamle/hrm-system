@@ -101,3 +101,9 @@ builder.Services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly)
 - Enums are strings in JSON (`"Annual"`, `"Pending"`).
 - Create returns `201` with `{ id }`; update, delete and state changes return `204`.
 - Errors are ProblemDetails: `400` validation (with `errors`), `401`, `403` (policy), `404` (missing **or outside your data scope**), `409` (duplicate or concurrent change), `422` (business rule).
+
+**Concurrency.** Rules that read data and then write (enough balance, no overlapping leave) must hold when two requests run at the same moment:
+- *Leave* (submit, approve, reject, terminate) runs inside `IApplicationDbContext.WithEmployeeLockAsync`: a transaction that first takes a row lock on the employee (`SELECT … FOR UPDATE`). Requests for the same employee run one after another and each sees what the previous one committed; different employees don't wait for each other. Entities are loaded *inside* the lock, never before it.
+- *Row versions* (PostgreSQL `xmin`) on `leave_requests`, `employees` and `refresh_tokens`: saving a row someone else changed since it was read fails with `409` instead of overwriting.
+- *Employee codes* come from the `employee_code_seq` sequence, so simultaneous creates can't pick the same code.
+- `ConcurrencyTests` fire the requests together and fail without these protections (6 duplicate requests created; 5 of 6 balance deductions lost).
