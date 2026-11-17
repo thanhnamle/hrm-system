@@ -1,143 +1,88 @@
 @if (summary.hasValue()) {
   @let s = summary.value();
-  <div class="mb-6">
-    <h1 class="text-2xl font-semibold">Hello, {{ firstName() }}</h1>
-    <p class="mt-1 text-sm text-muted">{{ s.today | date: 'fullDate' }}</p>
+  <div class="space-y-8">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold">{{ greeting() }}</h1>
+        <p class="mt-1 text-sm text-muted">
+          {{ s.today | date: 'fullDate' }}
+          @if (!s.isWorkingDay) {
+            · Weekend
+          }
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        @if (s.system; as system) {
+          <app-badge [tone]="health[system.status].tone">
+            {{
+              system.status === 'Healthy'
+                ? 'All systems operational'
+                : 'System ' + health[system.status].label.toLowerCase()
+            }}
+          </app-badge>
+        }
+        <span class="text-muted" aria-live="polite">
+          @if (summary.isLoading()) {
+            Refreshing…
+          } @else if (lastUpdated(); as at) {
+            Updated {{ at | date: 'HH:mm:ss' }}
+            @if (roundTripMs() !== null) {
+              · {{ roundTripMs() }} ms
+            }
+          }
+        </span>
+        <button
+          type="button"
+          class="btn-secondary px-3 py-1.5"
+          (click)="refresh()"
+          [disabled]="summary.isLoading()"
+        >
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    @if (quickActions().length) {
+      <nav aria-label="Quick actions" class="flex flex-wrap gap-2">
+        @for (a of quickActions(); track a.link) {
+          <a [routerLink]="a.link" class="btn-secondary px-3 py-1.5">{{ a.label }}</a>
+        }
+      </nav>
+    }
+
+    @if (s.organization; as org) {
+      <app-organization-section [org]="org" [today]="s.today" [isWorkingDay]="s.isWorkingDay" />
+    }
+
+    @if (s.team; as team) {
+      <app-team-section [team]="team" [today]="s.today" [isWorkingDay]="s.isWorkingDay" />
+    }
+
+    @if (s.personal; as me) {
+      <app-personal-section
+        [me]="me"
+        [today]="s.today"
+        [employeeId]="auth.user()?.employeeId ?? ''"
+      />
+    }
+
+    @if (s.system && s.dataQuality) {
+      <app-reliability-section
+        [system]="s.system"
+        [quality]="s.dataQuality"
+        [roundTripMs]="roundTripMs()"
+        [canManageUsers]="canManageUsers()"
+      />
+    }
   </div>
-
-  <!-- Organization: Admin and HR -->
-  @if (s.organization; as org) {
-    <section class="mb-8" aria-labelledby="org-heading">
-      <h2 id="org-heading" class="mb-3 text-sm font-semibold tracking-wide text-muted uppercase">
-        Organization
-      </h2>
-      <div class="grid gap-4 sm:grid-cols-3">
-        <a routerLink="/employees" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Active employees</p>
-          <p class="mt-1 text-3xl font-semibold">{{ org.headcount }}</p>
-        </a>
-        <a routerLink="/attendance/team" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">On leave today</p>
-          <p class="mt-1 text-3xl font-semibold">{{ org.onLeaveToday }}</p>
-        </a>
-        <a routerLink="/leave/approvals" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Leave requests to review</p>
-          <p class="mt-1 text-3xl font-semibold">{{ org.pendingApprovals }}</p>
-        </a>
-      </div>
-
-      <div class="card mt-4">
-        <h3 id="headcount-heading" class="mb-4 font-semibold">Active employees by department</h3>
-        <!-- One series, so no legend: the title names it and each bar carries its value. -->
-        <ul class="space-y-3" aria-labelledby="headcount-heading">
-          @for (d of departments(); track d.departmentId) {
-            <li class="grid grid-cols-[10rem_1fr_2.5rem] items-center gap-3 text-sm">
-              <span class="truncate text-ink" [title]="d.departmentName">{{
-                d.departmentName
-              }}</span>
-              <span class="h-2 rounded-full bg-canvas" aria-hidden="true">
-                <span
-                  class="block h-2 rounded-full bg-brand-600"
-                  [style.width.%]="d.percent"
-                  [title]="d.departmentName + ': ' + d.headcount + ' active employee(s)'"
-                ></span>
-              </span>
-              <span class="text-right font-medium text-ink tabular-nums">{{ d.headcount }}</span>
-            </li>
-          }
-        </ul>
-      </div>
-    </section>
-  }
-
-  <!-- Team: Manager -->
-  @if (s.team; as team) {
-    <section class="mb-8" aria-labelledby="team-heading">
-      <h2 id="team-heading" class="mb-3 text-sm font-semibold tracking-wide text-muted uppercase">
-        My team
-      </h2>
-      <div class="grid gap-4 sm:grid-cols-4">
-        <a routerLink="/employees" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Team members</p>
-          <p class="mt-1 text-3xl font-semibold">{{ team.teamSize }}</p>
-        </a>
-        <a routerLink="/attendance/team" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Checked in today</p>
-          <p class="mt-1 text-3xl font-semibold">{{ team.presentToday }}</p>
-        </a>
-        <a routerLink="/attendance/team" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">On leave today</p>
-          <p class="mt-1 text-3xl font-semibold">{{ team.onLeaveToday }}</p>
-        </a>
-        <a routerLink="/leave/approvals" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Requests to review</p>
-          <p class="mt-1 text-3xl font-semibold">{{ team.pendingApprovals }}</p>
-        </a>
-      </div>
-    </section>
-  }
-
-  <!-- Personal: anyone with an employee record -->
-  @if (s.personal; as me) {
-    <section aria-labelledby="me-heading">
-      <h2 id="me-heading" class="mb-3 text-sm font-semibold tracking-wide text-muted uppercase">
-        Me
-      </h2>
-      <div class="grid gap-4 lg:grid-cols-3">
-        <a routerLink="/leave" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Annual leave available</p>
-          <p class="mt-1 text-3xl font-semibold">
-            {{ me.annualLeaveBalance - me.pendingAnnualDays | number: '1.0-1' }}
-          </p>
-          <p class="text-xs text-muted">
-            {{ me.annualLeaveBalance | number: '1.0-1' }} in balance ·
-            {{ me.pendingRequests }} request(s) pending
-          </p>
-        </a>
-        <a routerLink="/attendance" class="card block p-5 hover:border-brand-500">
-          <p class="text-sm text-muted">Today</p>
-          @if (me.checkedOutAt) {
-            <p class="mt-1 text-xl font-semibold">
-              {{ me.checkedInAt | date: 'shortTime' }} – {{ me.checkedOutAt | date: 'shortTime' }}
-            </p>
-            <p class="text-xs text-muted">Done for today</p>
-          } @else if (me.checkedInAt) {
-            <p class="mt-1 text-xl font-semibold">
-              In since {{ me.checkedInAt | date: 'shortTime' }}
-            </p>
-            <p class="text-xs text-muted">Remember to check out</p>
-          } @else {
-            <p class="mt-1 text-xl font-semibold">Not checked in</p>
-            <p class="text-xs text-brand-700">Check in →</p>
-          }
-        </a>
-        <div class="card p-5">
-          <p class="mb-2 text-sm text-muted">Recent leave requests</p>
-          @if (me.recentRequests.length) {
-            <ul class="space-y-2">
-              @for (r of me.recentRequests; track r.id) {
-                <li class="flex items-center justify-between gap-2 text-sm">
-                  <span>
-                    {{ r.type }} · {{ r.startDate | date: 'MMM d' }}
-                    @if (r.endDate !== r.startDate) {
-                      – {{ r.endDate | date: 'MMM d' }}
-                    }
-                  </span>
-                  <app-badge [status]="r.status" />
-                </li>
-              }
-            </ul>
-          } @else {
-            <p class="text-sm text-muted">No requests yet.</p>
-          }
-        </div>
-      </div>
-    </section>
-  }
 } @else if (summary.isLoading()) {
   <app-loading label="Loading your dashboard…" />
 } @else if (summary.error()) {
-  <app-empty-state title="The dashboard could not be loaded">
+  <app-empty-state
+    title="The dashboard could not be loaded"
+    message="The API or the database may be down. Try again in a moment."
+  >
     <button type="button" class="btn-secondary" (click)="summary.reload()">Try again</button>
   </app-empty-state>
 }

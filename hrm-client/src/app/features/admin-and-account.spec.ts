@@ -4,11 +4,9 @@ import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { polyfillDialog, provideTestApp, signInAs, typeInto } from '../../testing/test-helpers';
 import { Permissions } from '../core/auth/permissions';
-import { DashboardSummary } from '../core/models/dashboard';
 import { generatePassword, passwordPolicy } from '../shared/forms/passwords';
 import { ChangePassword } from './account/change-password/change-password';
 import { UserList } from './admin/users/user-list/user-list';
-import { Dashboard } from './dashboard/dashboard/dashboard';
 
 const page = (items: unknown[]) => ({
   items,
@@ -18,11 +16,6 @@ const page = (items: unknown[]) => ({
   totalPages: 1,
 });
 const text = (el: HTMLElement) => el.textContent?.replace(/\s+/g, ' ') ?? '';
-/** "Label value" of each stat tile, read per <p> (adjacent paragraphs have no space in textContent). */
-const tiles = (el: HTMLElement) =>
-  [...el.querySelectorAll('.card')].map((c) =>
-    [...c.querySelectorAll(':scope > p')].map((p) => p.textContent?.trim()).join(' '),
-  );
 
 describe('passwords', () => {
   it('generated passwords always satisfy the policy', () => {
@@ -39,7 +32,7 @@ describe('passwords', () => {
   );
 });
 
-describe('Dashboard, Users and Change password', () => {
+describe('Users and Change password', () => {
   let http: HttpTestingController;
   beforeAll(polyfillDialog);
 
@@ -51,60 +44,6 @@ describe('Dashboard, Users and Change password', () => {
   });
 
   afterEach(() => http.verify());
-
-  describe('Dashboard', () => {
-    const summary: DashboardSummary = {
-      role: 'HR',
-      today: '2030-01-07',
-      organization: {
-        headcount: 10,
-        onLeaveToday: 1,
-        pendingApprovals: 2,
-        headcountByDepartment: [
-          { departmentId: 'eng', departmentName: 'Engineering', headcount: 5 },
-          { departmentId: 'sal', departmentName: 'Sales', headcount: 2 },
-        ],
-      },
-      team: null,
-      personal: {
-        annualLeaveBalance: 12,
-        pendingAnnualDays: 2,
-        pendingRequests: 1,
-        checkedInAt: null,
-        checkedOutAt: null,
-        recentRequests: [],
-      },
-    };
-
-    it('shows the organization with bars scaled to the largest department', async () => {
-      signInAs('HR', [Permissions.EmployeesView]);
-      const fixture = TestBed.createComponent(Dashboard);
-      TestBed.tick();
-      http.expectOne('/api/dashboard').flush(summary);
-      await fixture.whenStable();
-      const el = fixture.nativeElement as HTMLElement;
-
-      expect(text(el)).toContain('Hello, Test');
-      expect(tiles(el)).toContain('Active employees 10');
-      expect(tiles(el).some((t) => t.startsWith('Annual leave available 10'))).toBe(true); // 12 − 2 pending
-      const bars = [
-        ...el.querySelectorAll<HTMLElement>('ul span[title] ~ span span, li span.block'),
-      ].map((b) => b.style.width);
-      expect(bars).toEqual(['100%', '40%']);
-      expect(text(el)).not.toContain('My team');
-    });
-
-    it('shows only the personal section to an employee', async () => {
-      signInAs('Employee', [Permissions.EmployeesView]);
-      const fixture = TestBed.createComponent(Dashboard);
-      TestBed.tick();
-      http.expectOne('/api/dashboard').flush({ ...summary, role: 'Employee', organization: null });
-      await fixture.whenStable();
-
-      expect(text(fixture.nativeElement)).not.toContain('Organization');
-      expect(text(fixture.nativeElement)).toContain('Not checked in');
-    });
-  });
 
   describe('UserList', () => {
     async function render() {

@@ -1,0 +1,144 @@
+@let s = system();
+@let q = quality();
+<section class="space-y-4" aria-labelledby="reliability-heading">
+  <h2 id="reliability-heading" class="text-sm font-semibold tracking-wide text-muted uppercase">
+    Reliability
+  </h2>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <!-- System status -->
+    <div class="card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="grid size-10 place-items-center rounded-lg bg-brand-50 text-brand-700">
+            <app-icon name="pulse" />
+          </span>
+          <div>
+            <h3 class="font-semibold">System status</h3>
+            <p class="text-xs text-muted">Checked {{ s.checkedAt | date: 'mediumTime' }}</p>
+          </div>
+        </div>
+        <app-badge [tone]="health[s.status].tone">{{
+          s.status === 'Healthy' ? 'All systems operational' : health[s.status].label
+        }}</app-badge>
+      </div>
+
+      <table class="mt-4 w-full text-sm">
+        <caption class="sr-only">
+          Components and response times
+        </caption>
+        <thead>
+          <tr class="text-left text-xs text-muted">
+            <th class="pb-2 font-medium">Component</th>
+            <th class="pb-2 font-medium">Status</th>
+            <th class="pb-2 text-right font-medium">Response</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          <tr>
+            <td class="py-2">API (from your browser)</td>
+            <td class="py-2"><app-badge tone="success">Operational</app-badge></td>
+            <td class="py-2 text-right tabular-nums">
+              {{ roundTripMs() === null ? '–' : roundTripMs() + ' ms' }}
+            </td>
+          </tr>
+          @for (c of s.components; track c.name) {
+            <tr>
+              <td class="py-2">{{ componentName(c.name) }}</td>
+              <td class="py-2">
+                <app-badge [tone]="health[c.status].tone">{{ health[c.status].label }}</app-badge>
+              </td>
+              <td class="py-2 text-right tabular-nums">{{ c.durationMs }} ms</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt class="text-xs text-muted">Running for</dt>
+          <dd class="font-medium">{{ uptime() }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">Started</dt>
+          <dd class="font-medium">{{ s.startedAt | date: 'MMM d, HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">API version</dt>
+          <dd class="font-medium break-all">{{ version() }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">Refresh</dt>
+          <dd class="font-medium">Every minute</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Data quality -->
+    <div class="card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="grid size-10 place-items-center rounded-lg bg-brand-50 text-brand-700">
+            <app-icon name="shield" />
+          </span>
+          <div>
+            <h3 class="font-semibold">Data quality</h3>
+            <p class="text-xs text-muted">{{ q.activeEmployees }} active employees</p>
+          </div>
+        </div>
+        <span class="text-right">
+          <span class="block text-2xl font-semibold tabular-nums">{{ completeness() }}%</span>
+          <span class="block text-xs text-muted">profiles complete</span>
+        </span>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        @for (meter of meters(); track meter.label) {
+          <app-meter [label]="meter.label" [value]="meter.value" [total]="q.activeEmployees" />
+        }
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <span class="text-muted">{{ accounts() }} logins:</span>
+        @for (r of q.accountsByRole; track r.role) {
+          <span
+            >{{ r.role }} <span class="font-medium tabular-nums">{{ r.count }}</span></span
+          >
+        }
+        @if (q.lockedAccounts) {
+          @if (canManageUsers()) {
+            <a routerLink="/admin/users" class="ml-auto">
+              <app-badge tone="danger">{{ q.lockedAccounts }} locked</app-badge>
+            </a>
+          } @else {
+            <app-badge tone="danger" class="ml-auto">{{ q.lockedAccounts }} locked</app-badge>
+          }
+        } @else {
+          <app-badge tone="success" class="ml-auto">No locked accounts</app-badge>
+        }
+      </div>
+
+      @if (q.needsAttention.length) {
+        <p class="mt-4 mb-1 text-sm font-medium">Needs attention</p>
+        <ul class="divide-y divide-border">
+          @for (g of q.needsAttention; track g.employeeId) {
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <a
+                class="truncate text-ink hover:text-brand-700"
+                [routerLink]="['/employees', g.employeeId]"
+                >{{ g.employeeName }}</a
+              >
+              <span class="flex shrink-0 flex-wrap justify-end gap-1">
+                @for (item of g.missing; track item) {
+                  <app-badge tone="warning">no {{ item }}</app-badge>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mt-4 text-sm text-success">Every active employee has a complete profile.</p>
+      }
+    </div>
+  </div>
+</section>

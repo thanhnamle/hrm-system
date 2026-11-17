@@ -56,7 +56,7 @@ describe('App', () => {
 
     expect(router.url).toBe('/dashboard');
     expect(page.querySelector('app-sidebar')).toBeTruthy();
-    expect(page.querySelector('h1')?.textContent).toContain('Hello, Huy');
+    expect(page.querySelector('h1')?.textContent).toMatch(/Good (morning|afternoon|evening), Huy/);
   });
 
   it('shows only the menu items the role may use', async () => {
